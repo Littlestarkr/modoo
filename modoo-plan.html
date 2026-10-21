@@ -1,0 +1,726 @@
+<title>모두의 창업 사업계획서 작성기</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: 좌측 입력 패널(기본정보·자료·보완사항) + 우측 Q1~Q4 문서 패널. 모바일은 한 열로 쌓임. */
+:root{
+  --bg:#eceff5; --surface:#ffffff; --surface-2:#f5f7fb; --ink:#192033; --muted:#566077; --line:#d5dae6;
+  --accent:#2352c4; --accent-ink:#ffffff; --accent-soft:#e1e9fa; --star:#b97d00;
+  --warn-bg:#fff3d1; --warn:#6e4a00; --ok:#1c7447; --bad:#b3261e;
+  --sans:"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;
+  --serif:"Noto Serif KR","Batang","AppleMyungjo",serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10131b; --surface:#191e2a; --surface-2:#1f2533; --ink:#e7eaf2; --muted:#9aa3b8; --line:#2e3547;
+    --accent:#86a8ff; --accent-ink:#0b1431; --accent-soft:#222c4a; --star:#f0b429;
+    --warn-bg:#3a2f12; --warn:#f2d082; --ok:#62d394; --bad:#ff8f86; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10131b; --surface:#191e2a; --surface-2:#1f2533; --ink:#e7eaf2; --muted:#9aa3b8; --line:#2e3547;
+  --accent:#86a8ff; --accent-ink:#0b1431; --accent-soft:#222c4a; --star:#f0b429;
+  --warn-bg:#3a2f12; --warn:#f2d082; --ok:#62d394; --bad:#ff8f86; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 56px}
+.wrap{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
+h1{font-family:var(--serif);font-size:clamp(22px,3.2vw,30px);line-height:1.25;margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:4px 0 0;font-size:14px}
+.deadline{display:flex;align-items:baseline;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 14px}
+.deadline b{font-family:var(--serif);font-size:22px;color:var(--star);font-variant-numeric:tabular-nums}
+.deadline span{font-size:13px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:minmax(0,400px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:980px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.panel h2{font-size:15px;margin:0;display:flex;align-items:center;gap:8px}
+.step{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:12px;font-weight:700}
+label{font-size:13px;font-weight:500;color:var(--muted);display:block;margin-bottom:4px}
+input[type=text],textarea,select{width:100%;font:inherit;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+textarea{resize:vertical;line-height:1.6}
+input:focus-visible,textarea:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:420px){.row2{grid-template-columns:1fr}}
+.hint{font-size:12.5px;color:var(--muted);margin:0}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);padding:8px 12px;font-weight:500}
+button:hover:not(:disabled){border-color:var(--accent)}
+button:disabled{opacity:.5;cursor:not-allowed}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700;padding:11px 16px;font-size:15px}
+button.ghost{background:transparent}
+button.small{padding:4px 9px;font-size:12.5px}
+.drop{border:1.5px dashed var(--line);border-radius:10px;padding:14px;text-align:center;background:var(--surface-2);color:var(--muted);font-size:13.5px}
+.drop.on{border-color:var(--accent);background:var(--accent-soft)}
+.files{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.files li{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:13px;background:var(--surface-2);border-radius:8px;padding:5px 10px}
+.files li span{min-width:0;overflow-wrap:anywhere}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.status{font-size:13px;color:var(--muted);min-height:20px}
+.status.err{color:var(--bad)}
+.doc-head{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between}
+.meter{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.meter b{color:var(--ink)}
+.meter .over{color:var(--bad)}
+.q{border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden;min-width:0}
+.q-head{display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:space-between;align-items:baseline;padding:12px 16px;background:var(--accent-soft)}
+.q-head h3{font-family:var(--serif);font-size:17px;margin:0}
+.q-head p{margin:0;font-size:12.5px;color:var(--muted)}
+.q-body{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.q textarea{min-height:260px;background:var(--surface);font-size:14.5px;line-height:1.75}
+.q-foot{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between}
+.count{font-size:13px;font-variant-numeric:tabular-nums;color:var(--muted)}
+.count.ok b{color:var(--ok)} .count.low b{color:var(--bad)}
+.flag{display:inline-block;margin-left:8px;background:var(--warn-bg);color:var(--warn);border-radius:999px;padding:1px 9px;font-size:12px;font-weight:500}
+.writing{color:var(--accent);font-weight:500}
+details.guide{font-size:13px;color:var(--muted)}
+details.guide summary{cursor:pointer;font-weight:500}
+details.guide ul{margin:6px 0 0;padding-left:18px}
+.redo{display:flex;gap:6px;flex:1 1 260px;min-width:0}
+.redo input{flex:1;min-width:0;padding:5px 9px;font-size:13px}
+.note{background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:10px 14px;font-size:13px}
+#v-label{flex:1 1 220px;min-width:0;width:auto}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:13.5px;z-index:20;max-width:90vw}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>모두의 창업 사업계획서 작성기</h1>
+      <p class="sub">1R 사업계획서 양식(Q1 문제 인식 · Q2 실현 가능성 · Q3 성장전략 · Q4 향후 발전방안)에 맞춰 초안을 작성합니다.</p>
+    </div>
+    <div class="deadline" title="제출기간 ~ 2026. 12. 1(화) 13시 정각까지 · 모두의 창업 플랫폼">
+      <b id="dday">D-?</b><span>제출 마감 2026. 12. 1(화) 13:00</span>
+    </div>
+  </header>
+
+  <section class="panel" id="savebar" aria-label="내 작업 저장">
+    <div class="doc-head">
+      <h2>내 작업 저장</h2>
+      <div class="actions">
+        <button type="button" id="save-now">지금 저장</button>
+        <button type="button" id="backup">백업 파일 저장</button>
+        <button type="button" id="restore">백업 불러오기</button>
+        <input type="file" id="restore-file" accept=".json,application/json" hidden>
+      </div>
+    </div>
+    <div class="status" id="cloud-status" role="status">저장 상태를 확인하는 중…</div>
+    <details id="vers">
+      <summary style="cursor:pointer;font-weight:500;font-size:14px">저장본 (되돌아갈 수 있는 이름 붙은 복사본)</summary>
+      <div class="actions" style="margin-top:10px">
+        <input type="text" id="v-label" placeholder="저장본 이름 (예: 멘토링 반영 전)" aria-label="저장본 이름">
+        <button type="button" id="v-make">저장본 만들기</button>
+      </div>
+      <ul class="files" id="v-list" style="margin-top:10px"></ul>
+    </details>
+  </section>
+
+  <div class="grid">
+    <!-- INPUT -->
+    <section class="panel" aria-label="입력">
+      <h2><span class="step">1</span>표지 정보</h2>
+      <div class="row2">
+        <div><label for="f-name">이름</label><input type="text" id="f-name" value="오주현"></div>
+        <div><label for="f-nick">닉네임</label><input type="text" id="f-nick" value="리틀스타"></div>
+      </div>
+      <div class="row2">
+        <div><label for="f-mentor">멘토기관</label><input type="text" id="f-mentor" value="연세대학교"></div>
+        <div><label for="f-date">작성일</label><input type="text" id="f-date" value="2026. 10."></div>
+      </div>
+      <div><label for="f-title">아이디어(아이템) 이름</label><input type="text" id="f-title" placeholder="예) 선-식별 기반 키오스크 퀵오더"></div>
+
+      <h2><span class="step">2</span>참고자료</h2>
+      <div class="drop" id="drop">
+        파일을 끌어다 놓거나
+        <button type="button" class="small" id="pick">파일 선택</button>
+        <input type="file" id="file" multiple accept=".txt,.md,.csv,.json,.docx,.pdf" hidden>
+        <p class="hint" style="margin-top:6px">PDF · Word(.docx) · 텍스트(.txt .md). 한글(.hwp)은 PDF나 docx로 저장해서 올려주세요.</p>
+      </div>
+      <ul class="files" id="files"></ul>
+      <div>
+        <label for="f-ref">텍스트 직접 입력 (1차 지원서, 메모, 멘토링 내용 등)</label>
+        <textarea id="f-ref" rows="9" placeholder="아이디어 설명, 1차 지원서 내용, 조사한 수치와 출처 등을 붙여넣으세요."></textarea>
+        <div class="actions" style="margin-top:6px">
+          <button type="button" class="small" id="load-sample">1차 아이디어 불러오기</button>
+          <span class="hint" id="ref-count"></span>
+        </div>
+      </div>
+
+      <h2><span class="step">3</span>1R 이후 달라진 점</h2>
+      <div>
+        <textarea id="f-delta" rows="6" aria-label="1R 이후 달라진 점" placeholder="1R 기간에 실제로 한 일과 확인한 것만 적어주세요. 멘토링 피드백, 점주·고객 인터뷰 결과, 시제품·화면 설계, 특허 출원 여부, 목표 고객이나 문제 정의의 변화 등."></textarea>
+        <p class="hint" style="margin-top:4px">실제로 하지 않은 일은 적지 않습니다. 양식 유의사항상 허위 기재는 불이익 대상입니다.</p>
+      </div>
+      <div>
+        <label for="f-extra">강조하거나 바꾸고 싶은 방향 (선택)</label>
+        <textarea id="f-extra" rows="3" placeholder="예) 프랜차이즈 본사보다 개인 카페 점주 시장 진입을 먼저 강조"></textarea>
+      </div>
+      <div class="row2">
+        <div><label for="f-len">문항별 분량</label>
+          <select id="f-len"><option value="1200">1,200자 내외</option><option value="1500" selected>1,500자 내외</option><option value="1800">1,800자 내외</option></select></div>
+        <div><label for="f-tier">작성 품질</label>
+          <select id="f-tier"><option value="default" selected>표준</option><option value="complex">정밀 (느림)</option></select></div>
+      </div>
+      <div class="actions">
+        <button type="button" class="primary" id="go">사업계획서 작성</button>
+        <button type="button" id="stop" hidden>중지</button>
+      </div>
+      <div class="status" id="status" role="status"></div>
+    </section>
+
+    <!-- OUTPUT -->
+    <section class="wrap" style="gap:14px;min-width:0" aria-label="사업계획서">
+      <div class="panel" style="gap:10px">
+        <div class="doc-head">
+          <h2 style="font-family:var(--serif);font-size:18px">사업계획서 초안</h2>
+          <div class="actions">
+            <button type="button" id="copy">전체 복사</button>
+            <button type="button" class="primary" id="docx">Word(.docx) 저장</button>
+          </div>
+        </div>
+        <div class="meter" id="meter"></div>
+        <p class="hint">저장되는 파일은 A4, 맑은 고딕 12pt, 줄간격 160%, 표 10pt로 구성되고 파일명은 「성명_1R 사업계획서.docx」입니다. 사진 붙임(최대 3장, A4 3쪽 이내)은 Word에서 넣어주세요.</p>
+      </div>
+      <div id="qs" style="display:flex;flex-direction:column;gap:14px"></div>
+      <div class="note">AI가 쓴 초안입니다. <b>[확인 필요: …]</b> 표시는 자료에 없어서 비워둔 부분이므로 직접 채우거나 지워주세요. 시장 규모 등 외부 수치는 출처를 확인한 뒤 넣고, 제출 전에 모든 내용이 사실인지 본인이 확인해야 합니다.</div>
+    </section>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(function(){
+"use strict";
+var $=function(s){return document.querySelector(s)};
+var QS=[
+ {id:1,title:"Q1. 문제 인식 (problem)",sub:"※ 아이디어의 개발 동기·목적 및 목표 시장 등",
+  guide:["아이디어를 착안한 계기와 해결하려는 문제(불편·비효율, 사회문제 등)","문제를 겪는 목표 고객과 문제의 크기·시급성 (통계·조사·인터뷰 근거와 함께)","목표 시장의 규모·특성, 기존 해결방식(경쟁·대체 제품·서비스)의 한계","1R 중 목표 고객이나 문제 정의가 달라졌다면 현재 내용 기준으로 작성"],
+  dir:"단순한 아이디어 소개보다 누가 어떤 문제를 겪고 있으며 왜 해결해야 하는지가 드러나게 작성"},
+ {id:2,title:"Q2. 실현 가능성 (solution)",sub:"※ 아이디어의 개발 방안, 준비 정도, 차별화 방안",
+  guide:["제품·서비스의 핵심 기능과 문제 해결 방식","개발·구현 방법(기술, 필요 자원, 직접 개발 또는 외주)과 현재까지의 준비 정도. 완료한 사항과 추진 예정 사항을 구분해서 기재","경쟁·대체 제품·서비스 대비 차별성과 이를 실현할 본인(팀)의 역량"],
+  dir:"장점 설명에 그치지 않고, 제시한 문제를 어떤 방식으로 해결하며 실제 제품·서비스로 구현할 수 있는지가 드러나게 작성"},
+ {id:3,title:"Q3. 성장전략 (scale-up)",sub:"※ 사업화 계획, 추진일정, 자금 소요 및 조달 계획",
+  guide:["수익 구조(누구에게, 무엇을, 어떻게 판매하는지)와 초기 시장 진입 전략","사업화 단계별 추진 일정과 목표 (표 활용 권장)","사업화에 필요한 자금 규모와 항목별 사용·조달 계획. 수치는 산출근거와 함께"],
+  dir:"제품을 만드는 데 그치지 않고 어떤 고객을 대상으로 어떤 방식으로 시장에 진입하고 수익을 낼 것인지가 구체적으로 드러나게 작성"},
+ {id:4,title:"Q4. 향후 발전방안 (development)",sub:"※ 중장기 아이템 고도화 및 사업 확장 계획",
+  guide:["현재 구체화 수준을 바탕으로 한 중장기 발전 방향과 목표","제품·서비스의 기능·성능·제공방식 고도화·확장 계획","고객·시장 또는 적용분야의 확대 방향","추가로 확보·연계가 필요한 기술·인력·협력기관 등 자원과 확보 방향"],
+  dir:"현재 구체화된 아이템을 기반으로 중장기적으로 제품·서비스와 사업을 어떤 방향으로 발전·확장할지를 중심으로 작성"}
+];
+var SAMPLE=[
+"[1차 지원 아이디어] 대기시간을 1/4로 줄여 매장 회전율을 극대화하는 키오스크 맞춤형 퀵오더 시스템",
+"- 배경: 매일 같은 카페에서 같은 메뉴를 주문하는데도 키오스크에서 메뉴 탐색, 옵션, 포장 선택, 포인트 적립 번호 입력, 카드 결제까지 매번 5~6단계를 반복한다. 출근 피크타임에는 앞사람의 메뉴 고민과 화면 탐색 시간이 겹쳐 매장 밖까지 대기열이 생긴다. 기존 무인 주문 시스템은 '처음 방문한 불특정 다수'를 기준으로 설계되어 있다.",
+"- 핵심 문제: 공급자 중심 UI 때문에 매일 같은 메뉴를 사는 단골도 40~50초를 쓴다. 오피스 상권·테이크아웃 매장은 출근길과 점심 피크타임의 시간당 주문 처리 용량이 매출을 좌우하므로, 대기열은 고객 이탈과 회전율 저하로 이어진다.",
+"- 솔루션(선-식별 주문): 결제 마지막에 하던 고객 식별을 첫 화면으로 당긴다. ① 전화번호 또는 간편 PIN을 입력하면 복잡한 메뉴판 대신 최근 주문 메뉴와 사전 설정한 '나만의 메뉴' 2~3개만 보여주고 1터치 결제로 연결한다. ② 모바일 앱의 '마이 메뉴 QR'을 키오스크 바코드 스캐너에 비추면 주문서가 자동 생성되고 결제 화면으로 넘어간다.",
+"- 차별점: 기존 방식은 탐색→메뉴 선택→옵션→포장→포인트 적립→결제로 40~50초가 걸리고, 본 솔루션은 선-식별/QR 스캔→맞춤 메뉴 1터치→결제로 10초 이내(약 75% 이상 단축)를 목표로 한다. 사이렌오더 같은 모바일 원격주문은 주문 잊음, 픽업 순번 혼선 한계가 있어 보완 관계이며, 앱 설치 피로가 있는 현장 고객까지 포괄한다. 고가 하드웨어 교체 없이 기존 POS·키오스크 소프트웨어에 플러그인/API로 붙는다.",
+"- 기대효과: 모닝 피크타임 주문 처리 한계를 3배 이상 확대, 단골 이탈 방어와 락인, 버려지던 포인트 적립 번호를 시간대별·고객별 재구매 데이터로 자산화.",
+"- 수익모델: ① 키오스크 대당 월 1~2만 원 SaaS 구독 ② 프랜차이즈 본사 대상 API 연동 라이선스와 브랜드 맞춤 UI/UX 개발 용역 ③ POS·키오스크 제조사·VAN사 제휴로 신규 설치 건당 수수료 또는 유지관리비 쉐어 ④ 고객별 방문 주기·재구매 옵션·이탈 위험군을 보여주는 CRM 리포트 유료 구독, 개인화 쿠폰·업셀링 프로모션 수수료.",
+"- 단계별 로드맵: 1단계 강남·여의도·판교 등 오피스 밀집 지역 테이크아웃 카페 30~50개소 파일럿으로 회전율 개선 ROI 입증 → 2단계 중저가 커피 프랜차이즈 본사(메가MGC커피, 컴포즈, 빽다방 등)와 토스트·샐러드 전문점 단체 공급 계약 → 3단계 푸드코트, 구내식당, 드라이브스루 등 비대면 주문 유통 전반으로 확대.",
+"- 사업화 계획: 클라우드 UI 플러그인과 POS 연동 API 개발, 고객 번호와 POS 주문 이력의 실시간 매칭, 동적 QR 생성 엔진(스캔 후 0.5초 이내 장바구니 생성), 서울 오피스 상권 10~20개소 PoC(KPI: 1인당 키오스크 점유 시간 45초→10초 이내, 08:00~09:30 처리 건수와 매출 증대), POS 소프트웨어사(포스뱅크, 오케이포스 등) 제휴 Add-on 탑재, 파일럿 실증 데이터를 패키징한 프랜차이즈 B2B 영업, 가맹점 초기 3개월 무료 후 구독 전환. BM 특허 출원 예정('선-식별 기반 키오스크 주문 인터페이스 제어 방법', '개인화 QR코드를 이용한 무인 주문 결제 시스템'). 예비창업패키지, 초기창업패키지, 디딤돌 R&D 등 후속 정부 지원 연계.",
+"- 대표자 역량: 경영지도사(마케팅), 정책금융기관 30년 이상 실무(신용평가, 리스크 분석, 자금 집행), 전문 도서·칼럼 집필 경험.",
+"- 지원 정보: 지역 서울, 사업 분야 운영관리, 책임멘토 기관 연세대학교, 팀원 1명."
+].join("\n");
+
+var state={files:[],out:{1:"",2:"",3:"",4:""},busy:false,ctl:null,writing:0};
+var toastT;
+function toast(m){var t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){t.hidden=true},2600)}
+function setStatus(m,err){var s=$("#status");s.textContent=m||"";s.className="status"+(err?" err":"")}
+function len(s){return Array.from(s||"").length}
+function flags(s){return ((s||"").match(/\[(?:확인 필요|입력 필요)[^\]]*\]/g)||[]).length}
+
+/* ---------- D-day ---------- */
+(function(){
+  var d=new Date(),t=new Date(2026,11,1,13,0,0),diff=Math.ceil((t-d)/86400000);
+  $("#dday").textContent=diff>0?"D-"+diff:(diff===0?"D-DAY":"마감");
+})();
+
+/* ---------- build question cards ---------- */
+var qsEl=$("#qs");
+QS.forEach(function(q){
+  var el=document.createElement("article");el.className="q";el.id="q"+q.id;
+  el.innerHTML='<div class="q-head"><h3>'+q.title+'</h3><p>'+q.sub+'</p></div>'+
+  '<div class="q-body">'+
+  '<details class="guide"><summary>양식의 작성 요령 보기</summary><ul>'+q.guide.map(function(g){return"<li>"+g+"</li>"}).join("")+'</ul><p style="margin:6px 0 0">작성 방향: '+q.dir+'</p></details>'+
+  '<textarea id="t'+q.id+'" aria-label="'+q.title+' 본문" placeholder="‘사업계획서 작성’ 버튼을 누르면 이곳에 초안이 채워집니다. 직접 입력하거나 고칠 수도 있습니다."></textarea>'+
+  '<div class="q-foot"><span class="count" id="c'+q.id+'"></span>'+
+  '<div class="redo"><input type="text" id="r'+q.id+'" placeholder="이 문항만 다시 쓸 때 지시 (예: 수치 근거를 더 구체적으로)" aria-label="'+q.title+' 다시 쓰기 지시"><button type="button" class="small" data-redo="'+q.id+'">다시 쓰기</button></div></div>'+
+  '</div>';
+  qsEl.appendChild(el);
+  el.querySelector("textarea").addEventListener("input",function(e){state.out[q.id]=e.target.value;refresh();save()});
+});
+
+function refresh(){
+  var total=0,fl=0;
+  QS.forEach(function(q){
+    var n=len(state.out[q.id]),f=flags(state.out[q.id]);total+=n;fl+=f;
+    var c=$("#c"+q.id);
+    var cls=n===0?"":(n>=1000?"ok":"low");
+    c.className="count "+cls;
+    c.innerHTML="공백 포함 <b>"+n.toLocaleString("ko-KR")+"</b>자"+(n>0&&n<1000?" (1,000자 이상 권장)":"")+(f?'<span class="flag">확인 필요 '+f+'곳</span>':"")+(state.writing===q.id?' <span class="writing">· 작성 중…</span>':"");
+  });
+  var pages=estimatePages();
+  var over=pages>8;
+  $("#meter").innerHTML="<span>전체 <b>"+total.toLocaleString("ko-KR")+"</b>자</span><span>예상 분량 <b class='"+(over?"over":"")+"'>약 "+pages.toFixed(1)+"쪽</b> / 본문 8쪽 이내</span>"+(fl?"<span>확인 필요 <b>"+fl+"</b>곳</span>":"")+(over?"<span class='over'>분량 초과 가능성, 일부 줄여주세요</span>":"");
+  $("#docx").disabled=total===0;$("#copy").disabled=total===0;
+}
+/* 12pt · 줄간격 160% · 여백 2cm 기준 대략치: 한 줄 약 40자, 한 쪽 약 36줄 */
+function estimatePages(){
+  var lines=0;
+  QS.forEach(function(q){
+    var t=state.out[q.id]||"";if(!t.trim())return;
+    lines+=3;
+    var inTable=false;
+    t.split("\n").forEach(function(l){
+      if(/^\s*\|/.test(l)){lines+=1.6;inTable=true;return}
+      inTable=false;
+      if(!l.trim()){lines+=0.35;return}
+      lines+=Math.max(1,Math.ceil(len(l)/40));
+    });
+  });
+  return lines/36;
+}
+
+/* ---------- persistence: 이 브라우저 + 내 계정 ---------- */
+var FIELDS=["f-name","f-nick","f-mentor","f-date","f-title","f-ref","f-delta","f-extra","f-len","f-tier"];
+var LSKEY="modoo-bp-v1";
+function okData(o){return !!(o&&typeof o==="object"&&o.out&&typeof o.out==="object")}
+function collect(){var o={out:state.out,savedAt:Date.now()};FIELDS.forEach(function(id){o[id]=$("#"+id).value});return o}
+function applyData(o){
+  o=JSON.parse(JSON.stringify(o));
+  FIELDS.forEach(function(id){if(typeof o[id]==="string")$("#"+id).value=o[id]});
+  [1,2,3,4].forEach(function(i){state.out[i]=(o.out&&o.out[i])||"";$("#t"+i).value=state.out[i]});
+  refCount();refresh();
+}
+function save(){try{localStorage.setItem(LSKEY,JSON.stringify(collect()))}catch(e){}cloudSchedule()}
+FIELDS.forEach(function(id){$("#"+id).addEventListener("input",function(){refCount();save()})});
+
+/* ---------- cloud save: 내 계정의 비공개 영역 ---------- */
+var cloud={db:null,id:null,ready:false,busy:false,dirty:false,t:null,off:false,last:0,edited:false,fail:0};
+function hm(ts){try{return new Date(ts).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}catch(e){return ""}}
+function cs(msg,err){var s=$("#cloud-status");s.textContent=msg;s.className="status"+(err?" err":"")}
+function colRef(){return cloud.db.collection("data/users/"+cloud.id)}
+function curRef(){return colRef().doc("current")}
+function cloudOk(){cs("내 계정에 자동 저장됩니다"+(cloud.last?" · 마지막 저장 "+hm(cloud.last):"")+" · 저장한 내용은 나만 볼 수 있습니다.")}
+function cloudOffMsg(){cs("이 브라우저에만 저장됩니다. Claude에 로그인해 편집 가능한 권한으로 열면 내 계정에 자동 저장됩니다. 다른 기기로 옮길 때는 백업 파일을 쓰세요.")}
+function tooBig(o){return new TextEncoder().encode(JSON.stringify(o)).length>240000}
+function cloudSchedule(){
+  cloud.edited=true;
+  if(!cloud.db||!cloud.ready||cloud.off)return;
+  cloud.dirty=true;cs("저장 중…");clearTimeout(cloud.t);cloud.t=setTimeout(cloudFlush,1800);
+}
+async function cloudFlush(){
+  if(cloud.busy||!cloud.dirty||cloud.off)return;
+  cloud.busy=true;cloud.dirty=false;
+  var retry=0;
+  try{
+    var o=collect();
+    if(tooBig(o)){cs("내용이 너무 커서 계정에 저장하지 못했습니다. 참고자료 텍스트를 줄이거나 백업 파일로 보관하세요.",true);return}
+    await curRef().set({v:1,savedAt:o.savedAt,data:o});
+    cloud.last=o.savedAt;cloud.fail=0;cloudOk();
+  }catch(e){
+    if(e&&e.code==="invalid_argument"){cloud.off=true;cs("이 링크의 권한으로는 계정 저장을 쓸 수 없습니다. 이 브라우저에는 저장되고, 백업 파일로 보관할 수 있습니다.",true)}
+    else if(e&&e.code==="quota_exceeded"){cs("저장 공간이 가득 찼습니다. 오래된 저장본을 삭제해 주세요.",true)}
+    else{
+      cloud.dirty=true;cloud.fail++;
+      if(cloud.fail<3){retry=8000;cs("계정 저장에 실패했습니다. 잠시 뒤 다시 시도합니다.",true)}
+      else cs("자동 저장이 멈췄습니다. ‘지금 저장’을 눌러 다시 시도해 주세요.",true);
+    }
+  }finally{
+    cloud.busy=false;
+    if(retry&&!cloud.off){clearTimeout(cloud.t);cloud.t=setTimeout(cloudFlush,retry)}
+    else if(cloud.dirty&&!cloud.off&&cloud.fail===0){clearTimeout(cloud.t);cloud.t=setTimeout(cloudFlush,600)}
+  }
+}
+async function cloudInit(localSaved){
+  try{
+    var db=await window.claude.use("db"),user=await window.claude.use("user");
+    var id=user?await user.id():null;
+    if(!db||!id){cloudOffMsg();refreshVersions();return}
+    cloud.db=db;cloud.id=id;
+    var snap=await curRef().get();
+    if(snap.exists){
+      var d=snap.data();
+      cloud.last=(d&&d.savedAt)||0;
+      if(d&&okData(d.data)&&cloud.last>localSaved&&!cloud.edited){
+        applyData(d.data);try{localStorage.setItem(LSKEY,JSON.stringify(d.data))}catch(e){}
+        toast("내 계정에 저장된 최근 작업을 불러왔습니다");
+      }
+    }
+    cloud.ready=true;
+    if(cloud.edited||localSaved>cloud.last){cloud.dirty=true;cloud.t=setTimeout(cloudFlush,300)}
+    cloudOk();refreshVersions();
+  }catch(e){cloudOffMsg();refreshVersions()}
+}
+function arm(btn,text,fn){
+  if(btn.getAttribute("data-armed")){clearTimeout(btn._t);btn.removeAttribute("data-armed");btn.textContent=btn.getAttribute("data-label");fn();return}
+  btn.setAttribute("data-label",btn.textContent);btn.setAttribute("data-armed","1");btn.textContent=text;
+  btn._t=setTimeout(function(){btn.removeAttribute("data-armed");btn.textContent=btn.getAttribute("data-label")},5000);
+}
+async function refreshVersions(){
+  var ul=$("#v-list");ul.innerHTML="";
+  function note(t){var li=document.createElement("li");li.textContent=t;ul.appendChild(li)}
+  if(!cloud.db||cloud.off){note("내 계정에 저장할 수 있을 때 저장본을 만들 수 있습니다. 지금은 ‘백업 파일 저장’을 이용하세요.");return}
+  var snap;try{snap=await colRef().get()}catch(e){note("저장본 목록을 불러오지 못했습니다.");return}
+  var vs=snap.docs.filter(function(d){return d.id.indexOf("v_")===0}).map(function(d){return {id:d.id,v:d.data()||{}}}).sort(function(a,b){return (b.v.savedAt||0)-(a.v.savedAt||0)});
+  if(!vs.length){note("아직 저장본이 없습니다. 큰 수정 전에 하나 만들어 두면 언제든 돌아올 수 있어요. (최대 20개)");return}
+  vs.forEach(function(x){
+    var li=document.createElement("li"),sp=document.createElement("span"),b1=document.createElement("button"),b2=document.createElement("button");
+    sp.textContent=(x.v.label||"저장본")+" · "+hm(x.v.savedAt);
+    b1.type="button";b1.className="small";b1.textContent="불러오기";
+    b1.onclick=function(){arm(b1,"현재 내용을 덮어씁니다. 한 번 더",function(){
+      if(!okData(x.v.data)){toast("이 저장본을 읽지 못했습니다");return}
+      applyData(x.v.data);save();toast("저장본을 불러왔습니다")})};
+    b2.type="button";b2.className="small ghost";b2.textContent="삭제";
+    b2.onclick=function(){arm(b2,"정말 삭제? 한 번 더",async function(){
+      try{await colRef().doc(x.id).delete();refreshVersions()}catch(e){toast("삭제하지 못했습니다")}})};
+    var w=document.createElement("span");w.style.display="flex";w.style.gap="6px";w.appendChild(b1);w.appendChild(b2);
+    li.appendChild(sp);li.appendChild(w);ul.appendChild(li);
+  });
+}
+$("#v-make").onclick=async function(){
+  if(!cloud.db||!cloud.ready||cloud.off){toast("계정 저장을 쓸 수 없어 저장본을 만들 수 없습니다. 백업 파일을 이용하세요");return}
+  try{
+    var snap=await colRef().get();
+    if(snap.docs.filter(function(d){return d.id.indexOf("v_")===0}).length>=20){toast("저장본은 20개까지입니다. 하나를 삭제해 주세요");return}
+    var o=collect();if(tooBig(o)){toast("내용이 너무 커서 저장본을 만들 수 없습니다");return}
+    await colRef().doc("v_"+Date.now()).set({v:1,label:$("#v-label").value.trim()||"저장본",savedAt:o.savedAt,data:o});
+    $("#v-label").value="";toast("저장본을 만들었습니다");refreshVersions();
+  }catch(e){toast(e&&e.code==="quota_exceeded"?"저장 공간이 가득 찼습니다":"저장본을 만들지 못했습니다")}
+};
+$("#save-now").onclick=async function(){
+  save();
+  if(cloud.db&&cloud.ready&&!cloud.off){clearTimeout(cloud.t);cloud.dirty=true;cloud.fail=0;await cloudFlush();if(!cloud.off&&!cloud.dirty)toast("내 계정에 저장했습니다")}
+  else toast("이 브라우저에 저장했습니다");
+};
+$("#backup").onclick=async function(){
+  var dl=null;try{dl=await window.claude.use("downloads")}catch(e){}
+  if(!dl){toast("이 보기에서는 파일 저장이 막혀 있습니다");return}
+  try{await dl.save({filename:($("#f-name").value.trim()||"작성자")+"_사업계획서_백업.json",data:JSON.stringify(collect())});toast("백업 파일을 저장했습니다")}
+  catch(e){if(!e||e.code!=="declined")toast("저장하지 못했습니다")}
+};
+$("#restore").onclick=function(){$("#restore-file").click()};
+$("#restore-file").onchange=async function(e){
+  var f=e.target.files[0];e.target.value="";if(!f)return;
+  try{var o=JSON.parse(await f.text());if(!okData(o))throw new Error("bad");applyData(o);save();toast("백업을 불러왔습니다 (이전 내용은 덮어썼습니다)")}
+  catch(x){toast("백업 파일을 읽지 못했습니다")}
+};
+var localSaved=0;
+function initLocal(){
+  try{var o=JSON.parse(localStorage.getItem(LSKEY)||"null");if(okData(o)){applyData(o);localSaved=o.savedAt||0}}catch(e){}
+}
+
+function refCount(){
+  var n=len($("#f-ref").value)+state.files.reduce(function(a,f){return a+len(f.text)},0);
+  $("#ref-count").textContent=n?"참고자료 총 "+n.toLocaleString("ko-KR")+"자":"";
+}
+
+/* ---------- file reading ---------- */
+function loadScript(src){
+  return new Promise(function(res,rej){
+    var s=document.createElement("script");s.src=src;s.onload=res;s.onerror=function(){rej(new Error("라이브러리를 불러오지 못했습니다"))};document.head.appendChild(s);
+  });
+}
+var libP={};
+function lib(name,src,check){
+  if(check())return Promise.resolve();
+  if(!libP[name])libP[name]=loadScript(src);
+  return libP[name];
+}
+async function readFile(f){
+  var ext=(f.name.split(".").pop()||"").toLowerCase();
+  if(["txt","md","csv","json"].indexOf(ext)>=0)return await f.text();
+  if(ext==="docx"){
+    await lib("mammoth","https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js",function(){return window.mammoth});
+    var r=await window.mammoth.extractRawText({arrayBuffer:await f.arrayBuffer()});return r.value;
+  }
+  if(ext==="pdf"){
+    await lib("pdfjs","https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js",function(){return window.pdfjsLib});
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+    var pdf=await window.pdfjsLib.getDocument({data:new Uint8Array(await f.arrayBuffer()),disableWorker:true}).promise;
+    var out=[];
+    for(var p=1;p<=pdf.numPages;p++){
+      var pg=await pdf.getPage(p),tc=await pg.getTextContent();
+      out.push(tc.items.map(function(i){return i.str+(i.hasEOL?"\n":"")}).join(" "));
+    }
+    return out.join("\n\n");
+  }
+  throw new Error("지원하지 않는 형식입니다 (."+ext+")");
+}
+async function addFiles(list){
+  for(var i=0;i<list.length;i++){
+    var f=list[i];
+    try{
+      setStatus("읽는 중: "+f.name);
+      var t=(await readFile(f)).replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim();
+      if(!t)throw new Error("글자를 읽을 수 없습니다 (스캔 이미지 PDF일 수 있어요)");
+      state.files.push({name:f.name,text:t});
+      setStatus("");
+    }catch(e){setStatus(f.name+": "+(e&&e.message?e.message:"읽지 못했습니다")+". 텍스트로 붙여넣어 주세요.",true)}
+  }
+  renderFiles();
+}
+function renderFiles(){
+  var ul=$("#files");ul.innerHTML="";
+  state.files.forEach(function(f,i){
+    var li=document.createElement("li");
+    var sp=document.createElement("span");sp.textContent=f.name+" · "+len(f.text).toLocaleString("ko-KR")+"자";
+    var b=document.createElement("button");b.type="button";b.className="small ghost";b.textContent="삭제";b.setAttribute("aria-label",f.name+" 삭제");
+    b.onclick=function(){state.files.splice(i,1);renderFiles()};
+    li.appendChild(sp);li.appendChild(b);ul.appendChild(li);
+  });
+  refCount();
+}
+$("#pick").onclick=function(){$("#file").click()};
+$("#file").onchange=function(e){addFiles(Array.from(e.target.files));e.target.value=""};
+var drop=$("#drop");
+["dragenter","dragover"].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.add("on")})});
+["dragleave","drop"].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove("on")})});
+drop.addEventListener("drop",function(e){addFiles(Array.from(e.dataTransfer.files))});
+$("#load-sample").onclick=function(){
+  var r=$("#f-ref");r.value=(r.value.trim()?r.value.trim()+"\n\n":"")+SAMPLE;
+  $("#f-title").value=$("#f-title").value||"선-식별 기반 키오스크 단골 단축 퀵오더";
+  refCount();save();toast("1차 지원 아이디어를 불러왔습니다");
+};
+
+/* ---------- prompt ---------- */
+function gather(){
+  var ref=[];
+  var t=$("#f-ref").value.trim();if(t)ref.push("[직접 입력]\n"+t);
+  state.files.forEach(function(f){ref.push("[첨부: "+f.name+"]\n"+f.text)});
+  var joined=ref.join("\n\n");
+  if(len(joined)>120000)joined=Array.from(joined).slice(0,120000).join("")+"\n…(이하 생략)";
+  return {
+    name:$("#f-name").value.trim(),nick:$("#f-nick").value.trim(),mentor:$("#f-mentor").value.trim(),
+    title:$("#f-title").value.trim(),ref:joined,delta:$("#f-delta").value.trim(),extra:$("#f-extra").value.trim(),
+    n:parseInt($("#f-len").value,10)||1500
+  };
+}
+function formSpec(ids){
+  return QS.filter(function(q){return ids.indexOf(q.id)>=0}).map(function(q){
+    return q.title+" "+q.sub+"\n"+q.guide.map(function(g,i){return "  "+(i+1)+") "+g}).join("\n")+"\n  작성 방향: "+q.dir;
+  }).join("\n\n");
+}
+var RULES=[
+"1. 사실만 쓴다. [자료]와 [1R 이후 달라진 점]에 있는 내용만 사실로 서술하고, 없는 실적·고객·계약·인터뷰·수상·특허 등록·매출을 만들어내지 않는다.",
+"2. 자료에 없지만 문항에 꼭 필요한 정보(시장 규모, 통계, 인터뷰 결과, 팀 구성 등)는 지어내지 말고 그 자리에 [확인 필요: 무엇을 채워야 하는지] 형식으로 남긴다. 외부 통계와 시장규모는 출처를 알 수 없으면 숫자를 쓰지 말고 [확인 필요: ○○ 통계와 출처]로 남긴다.",
+"3. 아직 하지 않은 일은 '예정', '계획'으로 쓰고 완료한 일과 구분한다. 특히 Q2에는 '완료한 사항'과 '추진 예정 사항'을 나누어 적는다. 특허는 '출원 예정'과 '출원 완료'를 자료대로만 쓴다.",
+"4. 사업 계획 수치(목표, 일정, 소요자금)는 자료에 있으면 그대로 쓰고, 없으면 합리적 가정으로 제시하되 '(가정)'을 붙이고 산출식을 한 줄로 적는다. 금액 표에는 항목, 금액, 산출근거를 둔다.",
+"5. 1R 이후 달라진 점이 있으면 그것을 현재 기준으로 삼아 목표 고객, 핵심 기능, 사업모델에 반영한다.",
+"6. 문제 → 해결방안 → 시장진입·성장 → 향후 발전계획이 이어지도록 쓰고, 문항 사이에서 용어·수치·고객 정의를 일관되게 유지한다.",
+"7. 평가자가 확인하려는 것에 답한다: 누구의 어떤 문제인가, 얼마나 큰가, 왜 이 방식인가, 지금 어디까지 했나, 누구에게 어떻게 팔아 돈을 버나, 다음 단계는 무엇인가, 대표자는 왜 해낼 수 있나(근거 포함).",
+"8. 공공 사업계획서 문체로 쓴다. 문어체(~한다, ~이다, ~할 계획이다)를 쓰고 홍보 문구, 과장, 영어 약어 남발을 피한다. 소제목과 짧은 문장·목록을 섞어 읽기 쉽게 한다.",
+"9. 서식: 소제목은 줄 맨 앞에 '■ '로 시작한다. 목록은 '- '로 시작한다. 표는 파이프(|) 마크다운 표로 쓰고 첫 줄은 머리글, 둘째 줄은 구분선(---)으로 한다. '#' 제목, 코드블록, 이모지는 쓰지 않는다. 강조는 **굵게**만 가끔 쓴다.",
+"10. 인용하는 통계나 자료는 문장 끝 괄호에 출처를 적는다. 출처를 모르면 규칙 2를 따른다."
+].join("\n");
+function head(g){
+  return "당신은 중소벤처기업부 '모두의 창업 프로젝트' 사업계획서 작성을 돕는 전문 컨설턴트입니다. 작성자는 경영지도사이자 저술가이며, 아래 자료로 2R 진출평가용 사업계획서를 씁니다.\n\n"+
+  "[사업계획서 성격] 1R 활동으로 현재까지 구체화된 아이디어를 바탕으로 해결할 문제, 해결방안, 사업화·성장전략, 향후 발전계획을 제시하는 문서이며 2R 진출평가의 주요 자료입니다. 활동보고서와 달리 '앞으로 어떻게 구현·사업화·성장시킬지'가 중심입니다.\n\n"+
+  "[기본정보]\n- 아이템: "+(g.title||"(자료에서 파악)")+"\n- 대표자: "+g.name+" ("+g.nick+")\n- 멘토기관: "+g.mentor+"\n\n";
+}
+function tail(g){
+  return "[자료]\n"+(g.ref||"(없음)")+"\n\n[1R 이후 달라진 점]\n"+(g.delta||"(입력 없음. 자료에 있는 내용만 쓰고, 1R 활동 결과가 필요한 곳은 [확인 필요]로 남길 것)")+
+  (g.extra?"\n\n[작성자 요청]\n"+g.extra:"");
+}
+function promptAll(g){
+  return head(g)+"[양식] 아래 4개 문항은 모두 필수이며 문항별 1,000자 이상 권장입니다. 요령은 예시이므로 모든 항목을 순서대로 쓸 필요는 없고, 아이디어 특성에 맞게 문항 취지에 맞춰 구성합니다.\n\n"+formSpec([1,2,3,4])+
+  "\n\n[작성 원칙]\n"+RULES+
+  "\n\n[분량] 문항마다 공백 포함 "+g.n+"자 내외(최소 1,000자). 표 안의 글자도 분량에 포함됩니다. 네 문항 합계가 A4 8쪽(12pt, 줄간격 160%)을 넘지 않게 합니다.\n\n"+
+  "[출력 형식] 아래 구분 줄을 정확히 이 형태로 쓰고, 문항 제목은 본문에 다시 쓰지 말고 본문만 씁니다. 다른 설명이나 머리말은 쓰지 않습니다.\n=====Q1=====\n(Q1 본문)\n=====Q2=====\n(Q2 본문)\n=====Q3=====\n(Q3 본문)\n=====Q4=====\n(Q4 본문)\n\n"+tail(g);
+}
+function promptOne(g,id,instr){
+  var others=QS.filter(function(q){return q.id!==id&&state.out[q.id].trim()}).map(function(q){return "["+q.title+" 현재 본문]\n"+state.out[q.id]}).join("\n\n");
+  var cur=state.out[id].trim();
+  return head(g)+"[양식] 아래 문항 하나를 다시 씁니다.\n\n"+formSpec([id])+"\n\n[작성 원칙]\n"+RULES+
+  "\n\n[분량] 공백 포함 "+g.n+"자 내외(최소 1,000자).\n\n[출력 형식] 문항 제목 없이 본문만 출력합니다. 다른 설명은 쓰지 않습니다.\n\n"+
+  (others?"[다른 문항 현재 내용 — 용어와 수치를 일관되게 맞출 것]\n"+others+"\n\n":"")+
+  (cur?"[이 문항의 현재 초안]\n"+cur+"\n\n":"")+
+  (instr?"[이번 수정 지시]\n"+instr+"\n\n":"")+tail(g);
+}
+
+/* ---------- generation ---------- */
+function parseSections(text){
+  var res={},re=/=====Q([1-4])=====/g,m,idx=[];
+  while((m=re.exec(text))!==null)idx.push({id:+m[1],start:m.index,end:re.lastIndex});
+  idx.forEach(function(x,i){res[x.id]=text.slice(x.end,i+1<idx.length?idx[i+1].start:text.length).replace(/^\s+/,"").replace(/\s+$/,"")});
+  return {res:res,last:idx.length?idx[idx.length-1].id:0};
+}
+function errCopy(e){
+  var c=e&&e.code;
+  if(c==="not_granted"||c==="sampling_disabled"||c==="capability_disabled"||c==="not_declared")return "이 페이지에서 Claude 사용이 허용되지 않았습니다. 허용 후 다시 눌러주세요.";
+  if(c==="rate_limited")return "요청이 많거나 사용 한도에 도달했습니다. 잠시 뒤 다시 시도해주세요.";
+  if(c==="prompt_too_large")return "자료가 너무 깁니다. 참고자료를 줄여주세요.";
+  if(c==="session_expired")return "로그인이 만료되었습니다. 페이지를 새로고침해주세요.";
+  if(c==="refused")return "이 입력으로는 작성하지 못했습니다. 자료 내용을 확인해주세요.";
+  return "작성이 중단되었습니다. 이미 채워진 부분은 남아 있으니 다시 시도해주세요.";
+}
+function setBusy(b){
+  state.busy=b;$("#go").disabled=b;$("#stop").hidden=!b;
+  document.querySelectorAll("[data-redo]").forEach(function(x){x.disabled=b});
+}
+async function getSample(){
+  var s=null;try{s=await window.claude.use("sample")}catch(e){}
+  return s;
+}
+async function generateAll(){
+  if(state.busy)return;
+  var g=gather();
+  if(len(g.ref)+len(g.delta)<60){setStatus("참고자료나 아이디어 설명을 먼저 넣어주세요.",true);return}
+  if(QS.some(function(q){return state.out[q.id].trim()})&&!window.__confirmedOverwrite){
+    window.__confirmedOverwrite=true;
+    setStatus("기존 초안이 있습니다. 덮어쓰려면 ‘사업계획서 작성’을 한 번 더 누르세요.",true);
+    setTimeout(function(){window.__confirmedOverwrite=false},8000);return;
+  }
+  window.__confirmedOverwrite=false;
+  var sample=await getSample();
+  if(!sample){setStatus("이 보기에서는 AI 작성 기능을 쓸 수 없습니다. Claude 앱이나 claude.ai에서 열어주세요.",true);return}
+  state.ctl=new AbortController();setBusy(true);setStatus("분석하고 구성하는 중입니다. 첫 글이 나오기까지 1분 안팎 걸릴 수 있어요.");
+  var first=true;
+  try{
+    var r=await sample(promptAll(g),{signal:state.ctl.signal,cache:false,modelTier:$("#f-tier").value,onText:function(u){
+      if(first){first=false;QS.forEach(function(q){state.out[q.id]="";$("#t"+q.id).value=""});setStatus("작성 중…")}
+      apply(u.text,true);
+    }});
+    apply(r.text,false);
+    setStatus(r.truncated?"길이 제한으로 끝부분이 잘렸을 수 있습니다. 해당 문항만 ‘다시 쓰기’를 해주세요.":"작성을 마쳤습니다. 내용과 [확인 필요] 표시를 점검해주세요.");
+  }catch(e){
+    if(e&&e.text)apply(e.text,false);
+    if(!e||e.code!=="cancelled")setStatus(errCopy(e),true);else setStatus("중지했습니다.");
+  }finally{state.writing=0;setBusy(false);refresh();save()}
+}
+function apply(text,streaming){
+  var p=parseSections(text);
+  [1,2,3,4].forEach(function(i){
+    if(p.res[i]!==undefined){state.out[i]=p.res[i];$("#t"+i).value=p.res[i]}
+  });
+  state.writing=streaming?p.last:0;refresh();
+}
+async function redoOne(id){
+  if(state.busy)return;
+  var g=gather();
+  if(len(g.ref)+len(g.delta)<60){setStatus("참고자료나 아이디어 설명을 먼저 넣어주세요.",true);return}
+  var sample=await getSample();
+  if(!sample){setStatus("이 보기에서는 AI 작성 기능을 쓸 수 없습니다.",true);return}
+  var instr=$("#r"+id).value.trim();
+  state.ctl=new AbortController();setBusy(true);state.writing=id;refresh();setStatus(QS[id-1].title+" 다시 쓰는 중…");
+  var ta=$("#t"+id),first=true;
+  try{
+    var r=await sample(promptOne(g,id,instr),{signal:state.ctl.signal,cache:false,modelTier:$("#f-tier").value,onText:function(u){
+      first=false;var t=u.text.replace(/^=====Q\d=====\s*/,"");ta.value=t;state.out[id]=t;refresh();
+    }});
+    var t=r.text.replace(/^=====Q\d=====\s*/,"");ta.value=t;state.out[id]=t;
+    setStatus(QS[id-1].title+" 다시 썼습니다.");
+  }catch(e){
+    if(e&&e.text){var t2=e.text.replace(/^=====Q\d=====\s*/,"");ta.value=t2;state.out[id]=t2}
+    if(!e||e.code!=="cancelled")setStatus(errCopy(e),true);else setStatus("중지했습니다.");
+  }finally{state.writing=0;setBusy(false);refresh();save()}
+}
+$("#go").onclick=generateAll;
+$("#stop").onclick=function(){if(state.ctl)state.ctl.abort()};
+document.addEventListener("click",function(e){var b=e.target.closest("[data-redo]");if(b)redoOne(+b.getAttribute("data-redo"))});
+
+/* ---------- copy ---------- */
+function fullText(){
+  var g=gather();
+  return "2026년 2차 모두의 창업 프로젝트\n1R 사업계획서\n"+$("#f-date").value+"\n멘토기관: "+g.mentor+" / 이름: "+g.name+" / 닉네임: "+g.nick+"\n\n"+
+  QS.map(function(q){return q.title+"\n"+q.sub+"\n\n"+(state.out[q.id]||"")}).join("\n\n\n");
+}
+$("#copy").onclick=async function(){
+  var t=fullText();
+  try{await navigator.clipboard.writeText(t);toast("전체 내용을 복사했습니다")}
+  catch(e){var ta=$("#t1");toast("복사가 막혀 있습니다. 각 문항을 직접 선택해 복사해주세요")}
+};
+
+/* ---------- docx ---------- */
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+var FONT='<w:rFonts w:ascii="맑은 고딕" w:hAnsi="맑은 고딕" w:eastAsia="맑은 고딕" w:cs="맑은 고딕"/>';
+function run(t,o){o=o||{};var sz=o.sz||24;
+  return '<w:r><w:rPr>'+FONT+(o.b?'<w:b/>':'')+(o.color?'<w:color w:val="'+o.color+'"/>':'')+'<w:sz w:val="'+sz+'"/><w:szCs w:val="'+sz+'"/></w:rPr><w:t xml:space="preserve">'+esc(t)+'</w:t></w:r>'}
+function runs(t,o){
+  return t.split(/(\*\*[^*]+\*\*)/).filter(Boolean).map(function(p){
+    if(p.length>4&&p.slice(0,2)==="**"&&p.slice(-2)==="**")return run(p.slice(2,-2),Object.assign({},o,{b:true}));
+    return run(p,o)}).join("");
+}
+function para(inner,o){o=o||{};
+  return '<w:p><w:pPr>'+(o.keep?'<w:keepNext/>':'')+(o.shd?'<w:shd w:val="clear" w:color="auto" w:fill="'+o.shd+'"/>':'')+
+  '<w:spacing w:before="'+(o.before||0)+'" w:after="'+(o.after==null?60:o.after)+'" w:line="'+(o.line||384)+'" w:lineRule="auto"/>'+
+  (o.left?'<w:ind w:left="'+o.left+'" w:hanging="'+(o.hang||0)+'"/>':'')+(o.jc?'<w:jc w:val="'+o.jc+'"/>':'')+'</w:pPr>'+inner+'</w:p>'}
+var BORDER='<w:tblBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="808080"/><w:left w:val="single" w:sz="4" w:space="0" w:color="808080"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="808080"/><w:right w:val="single" w:sz="4" w:space="0" w:color="808080"/><w:insideH w:val="single" w:sz="4" w:space="0" w:color="808080"/><w:insideV w:val="single" w:sz="4" w:space="0" w:color="808080"/></w:tblBorders>';
+function table(rows,o){o=o||{};
+  var cols=Math.max.apply(null,rows.map(function(r){return r.length})),W=o.width||9638,cw=o.cols||Array(cols).fill(Math.floor(W/cols));
+  var x='<w:tbl><w:tblPr><w:tblW w:w="'+W+'" w:type="dxa"/>'+BORDER+'<w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="40" w:type="dxa"/><w:left w:w="90" w:type="dxa"/><w:bottom w:w="40" w:type="dxa"/><w:right w:w="90" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>'+cw.map(function(w){return '<w:gridCol w:w="'+w+'"/>'}).join("")+'</w:tblGrid>';
+  rows.forEach(function(r,ri){
+    x+='<w:tr>'+(o.minH?'<w:trPr><w:trHeight w:val="'+o.minH+'" w:hRule="atLeast"/></w:trPr>':'');
+    for(var c=0;c<cols;c++){
+      var txt=r[c]==null?"":r[c],head=(o.header&&ri===0)||(o.labelCol&&c===0);
+      x+='<w:tc><w:tcPr><w:tcW w:w="'+cw[c]+'" w:type="dxa"/>'+(head?'<w:shd w:val="clear" w:color="auto" w:fill="E7ECF5"/>':'')+'<w:vAlign w:val="center"/></w:tcPr>'+
+      para(runs(txt,{sz:20,b:head}),{after:0,line:300,jc:o.center?"center":(head&&o.header?"center":undefined)})+'</w:tc>';
+    }
+    x+='</w:tr>';
+  });
+  return x+'</w:tbl>';
+}
+function bodyXml(text){
+  var lines=text.split("\n"),out="",i=0;
+  while(i<lines.length){
+    var l=lines[i];
+    if(/^\s*\|/.test(l)){
+      var rows=[];
+      while(i<lines.length&&/^\s*\|/.test(lines[i])){
+        var cells=lines[i].trim().replace(/^\|/,"").replace(/\|$/,"").split("|").map(function(c){return c.trim()});
+        if(!cells.every(function(c){return /^:?-{2,}:?$/.test(c)}))rows.push(cells);
+        i++;
+      }
+      if(rows.length)out+=table(rows,{header:true})+para("",{after:80,line:240});
+      continue;
+    }
+    if(!l.trim()){i++;continue}
+    var t=l.trim();
+    if(t.indexOf("■ ")===0)out+=para(runs(t.slice(2),{b:true}),{before:120,after:40,keep:true});
+    else if(/^[-•·]\s+/.test(t))out+=para(run("· ")+runs(t.replace(/^[-•·]\s+/,"")),{left:300,hang:200});
+    else out+=para(runs(t),{});
+    i++;
+  }
+  return out;
+}
+function buildDocx(){
+  var g=gather(),b="";
+  b+=para("",{after:1800,line:240});
+  b+=para(run("2026년 2차 모두의 창업 프로젝트",{sz:32,b:true}),{jc:"center",after:200});
+  b+=para(run("1R 사업계획서",{sz:56,b:true}),{jc:"center",after:600});
+  if(g.title)b+=para(run(g.title,{sz:26}),{jc:"center",after:1200});else b+=para("",{after:1200});
+  b+=para(run($("#f-date").value,{sz:26,b:true}),{jc:"center",after:600});
+  b+=table([["멘토기관",g.mentor],["이름",g.name],["닉네임",g.nick]],{labelCol:true,cols:[2400,4400],width:6800,minH:520});
+  b+='<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+  QS.forEach(function(q,k){
+    b+=para(run(q.title,{b:true,sz:26}),{shd:"D9E2F3",keep:true,before:k?240:0,after:0,line:340});
+    b+=para(run(q.sub,{sz:20,color:"555555"}),{after:100,line:300,keep:true});
+    b+=bodyXml(state.out[q.id]||"");
+  });
+  b+='<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+  b+=para(run("붙 임  사진 등 참고자료 첨부 (해당 시)  * 최대 3장까지 가능",{b:true,sz:24}),{shd:"D9E2F3",after:120,line:340});
+  b+=table([["사진 등","사진 등"],["사진 제목/설명 등","사진 제목/설명 등"],["사진 등","사진 등"],["사진 제목/설명 등","사진 제목/설명 등"],["사진 등","사진 등"],["사진 제목/설명 등","사진 제목/설명 등"]],{center:true});
+  var sect='<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr>';
+  var doc='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+b+sect+'</w:body></w:document>';
+  var styles='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr>'+FONT+'<w:sz w:val="24"/><w:szCs w:val="24"/><w:lang w:val="ko-KR" w:eastAsia="ko-KR"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="384" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style></w:styles>';
+  var ct='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>';
+  var rels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>';
+  var drels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>';
+  var z=new window.JSZip();
+  z.file("[Content_Types].xml",ct);z.file("_rels/.rels",rels);z.file("word/document.xml",doc);z.file("word/styles.xml",styles);z.file("word/_rels/document.xml.rels",drels);
+  return z.generateAsync({type:"arraybuffer",compression:"DEFLATE"});
+}
+$("#docx").onclick=async function(){
+  if(!window.JSZip){toast("Word 파일 생성 도구를 불러오지 못했습니다. 전체 복사를 이용해주세요");return}
+  var dl=null;try{dl=await window.claude.use("downloads")}catch(e){}
+  if(!dl){toast("이 보기에서는 파일 저장이 막혀 있습니다. 전체 복사를 이용해주세요");return}
+  try{
+    var name=($("#f-name").value.trim()||"작성자")+"_1R 사업계획서.docx";
+    var buf=await buildDocx();
+    await dl.save({filename:name,data:buf});toast("저장했습니다");
+  }catch(e){if(!e||e.code!=="declined")toast("저장하지 못했습니다. 전체 복사를 이용해주세요")}
+};
+
+refCount();refresh();initLocal();cloudInit(localSaved);
+})();
+</script>

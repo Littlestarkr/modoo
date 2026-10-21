@@ -1,0 +1,892 @@
+<title>모두의 창업 활동보고서 작성기</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: 한 열 작업대. 1 표지·자료 → 2 멘토링 기록표 → 3 자금 집행내역표 → 4 AI 활용 메모 → 작성 → 문항 1~3 */
+:root{
+  --bg:#eceff5; --surface:#ffffff; --surface-2:#f5f7fb; --ink:#192033; --muted:#566077; --line:#d5dae6;
+  --accent:#2352c4; --accent-ink:#ffffff; --accent-soft:#e1e9fa; --star:#b97d00;
+  --warn-bg:#fff3d1; --warn:#6e4a00; --ok:#1c7447; --bad:#b3261e;
+  --sans:"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;
+  --serif:"Noto Serif KR","Batang","AppleMyungjo",serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10131b; --surface:#191e2a; --surface-2:#1f2533; --ink:#e7eaf2; --muted:#9aa3b8; --line:#2e3547;
+    --accent:#86a8ff; --accent-ink:#0b1431; --accent-soft:#222c4a; --star:#f0b429;
+    --warn-bg:#3a2f12; --warn:#f2d082; --ok:#62d394; --bad:#ff8f86; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10131b; --surface:#191e2a; --surface-2:#1f2533; --ink:#e7eaf2; --muted:#9aa3b8; --line:#2e3547;
+  --accent:#86a8ff; --accent-ink:#0b1431; --accent-soft:#222c4a; --star:#f0b429;
+  --warn-bg:#3a2f12; --warn:#f2d082; --ok:#62d394; --bad:#ff8f86; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 56px}
+.wrap{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
+h1{font-family:var(--serif);font-size:clamp(22px,3.2vw,30px);line-height:1.25;margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:4px 0 0;font-size:14px}
+.deadline{display:flex;align-items:baseline;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 14px}
+.deadline b{font-family:var(--serif);font-size:22px;color:var(--star);font-variant-numeric:tabular-nums}
+.deadline span{font-size:13px;color:var(--muted)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.panel h2{font-size:16px;margin:0;display:flex;align-items:center;gap:8px}
+.step{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:12px;font-weight:700;flex:none}
+label{font-size:13px;font-weight:500;color:var(--muted);display:block;margin-bottom:4px}
+input[type=text],textarea,select{width:100%;font:inherit;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+textarea{resize:vertical;line-height:1.6}
+input:focus-visible,textarea:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:820px){.cols{grid-template-columns:minmax(0,1fr)}}
+.row4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:620px){.row4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.hint{font-size:12.5px;color:var(--muted);margin:0}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);padding:8px 12px;font-weight:500}
+button:hover:not(:disabled){border-color:var(--accent)}
+button:disabled{opacity:.5;cursor:not-allowed}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700;padding:11px 16px;font-size:15px}
+button.ghost{background:transparent}
+button.small{padding:4px 9px;font-size:12.5px}
+.drop{border:1.5px dashed var(--line);border-radius:10px;padding:14px;text-align:center;background:var(--surface-2);color:var(--muted);font-size:13.5px}
+.drop.on{border-color:var(--accent);background:var(--accent-soft)}
+.files{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.files li{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:13px;background:var(--surface-2);border-radius:8px;padding:5px 10px}
+.files li span{min-width:0;overflow-wrap:anywhere}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.status{font-size:13px;color:var(--muted);min-height:20px}
+.status.err{color:var(--bad)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table.grid{border-collapse:collapse;width:100%;font-size:13px}
+table.grid th{background:var(--accent-soft);text-align:left;font-weight:700;padding:6px 8px;white-space:nowrap;border-bottom:1px solid var(--line)}
+table.grid td{padding:4px;border-bottom:1px solid var(--line);vertical-align:top}
+table.grid input,table.grid select,table.grid textarea{padding:5px 7px;font-size:13px;border-radius:6px}
+table.grid textarea{min-height:34px;resize:vertical}
+table.grid td.num input{text-align:right;font-variant-numeric:tabular-nums}
+.flags{font-size:12px;color:var(--warn);min-width:150px}
+.sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:620px){.sum{grid-template-columns:minmax(0,1fr)}}
+.sum div{background:var(--surface-2);border-radius:10px;padding:8px 12px}
+.sum small{display:block;color:var(--muted);font-size:12px}
+.sum b{font-size:18px;font-variant-numeric:tabular-nums}
+.sum b.neg{color:var(--bad)}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--ink);font-weight:500;margin:0}
+.chk input{width:auto}
+.doc-head{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between}
+.meter{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.meter b{color:var(--ink)} .meter .over{color:var(--bad)}
+.q{border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden;min-width:0}
+.q-head{display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:space-between;align-items:baseline;padding:12px 16px;background:var(--accent-soft)}
+.q-head h3{font-family:var(--serif);font-size:16.5px;margin:0;text-wrap:balance;flex:1 1 360px}
+.q-head p{margin:0;font-size:12.5px;color:var(--muted)}
+.q-body{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.q textarea{min-height:280px;background:var(--surface);font-size:14.5px;line-height:1.75}
+.q-foot{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between}
+.count{font-size:13px;font-variant-numeric:tabular-nums;color:var(--muted)}
+.count.ok b{color:var(--ok)} .count.low b{color:var(--bad)}
+.flag{display:inline-block;margin-left:8px;background:var(--warn-bg);color:var(--warn);border-radius:999px;padding:1px 9px;font-size:12px;font-weight:500}
+.writing{color:var(--accent);font-weight:500}
+details.guide{font-size:13px;color:var(--muted)}
+details.guide summary{cursor:pointer;font-weight:500}
+details.guide ul{margin:6px 0 0;padding-left:18px}
+.redo{display:flex;gap:6px;flex:1 1 260px;min-width:0}
+.redo input{flex:1;min-width:0;padding:5px 9px;font-size:13px}
+.note{background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:10px 14px;font-size:13px}
+#v-label{flex:1 1 220px;min-width:0;width:auto}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:13.5px;z-index:20;max-width:90vw}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>모두의 창업 활동보고서 작성기</h1>
+      <p class="sub">1R 활동보고서 양식(문항 1 멘토링 · 문항 2 창업활동자금 · 문항 3 AI 솔루션)과 붙임1 집행 상세내역을 만듭니다.</p>
+    </div>
+    <div class="deadline" title="제출기간 ~ 2026. 12. 1(화) 13시 정각까지 · 모두의 창업 플랫폼">
+      <b id="dday">D-?</b><span>제출 마감 2026. 12. 1(화) 13:00</span>
+    </div>
+  </header>
+
+  <section class="panel" id="savebar" aria-label="내 작업 저장">
+    <div class="doc-head">
+      <h2>내 작업 저장</h2>
+      <div class="actions">
+        <button type="button" id="save-now">지금 저장</button>
+        <button type="button" id="backup">백업 파일 저장</button>
+        <button type="button" id="restore">백업 불러오기</button>
+        <input type="file" id="restore-file" accept=".json,application/json" hidden>
+      </div>
+    </div>
+    <div class="status" id="cloud-status" role="status">저장 상태를 확인하는 중…</div>
+    <details id="vers">
+      <summary style="cursor:pointer;font-weight:500;font-size:14px">저장본 (되돌아갈 수 있는 이름 붙은 복사본)</summary>
+      <div class="actions" style="margin-top:10px">
+        <input type="text" id="v-label" placeholder="저장본 이름 (예: 멘토링 반영 전)" aria-label="저장본 이름">
+        <button type="button" id="v-make">저장본 만들기</button>
+      </div>
+      <ul class="files" id="v-list" style="margin-top:10px"></ul>
+    </details>
+  </section>
+
+  <section class="panel">
+    <h2><span class="step">1</span>표지 정보와 참고자료</h2>
+    <div class="row4">
+      <div><label for="f-name">이름</label><input type="text" id="f-name" value="오주현"></div>
+      <div><label for="f-nick">닉네임</label><input type="text" id="f-nick" value="리틀스타"></div>
+      <div><label for="f-mentor">멘토기관</label><input type="text" id="f-mentor" value="연세대학교"></div>
+      <div><label for="f-date">작성일</label><input type="text" id="f-date" value="2026. 10."></div>
+    </div>
+    <div class="cols">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="drop" id="drop">
+          멘토링 일지, 회의록, 설문 결과, 이전 사업계획서 등을 끌어다 놓거나
+          <button type="button" class="small" id="pick">파일 선택</button>
+          <input type="file" id="file" multiple accept=".txt,.md,.csv,.json,.docx,.pdf" hidden>
+          <p class="hint" style="margin-top:6px">PDF · Word(.docx) · 텍스트. 한글(.hwp)은 PDF나 docx로 저장해서 올려주세요.</p>
+        </div>
+        <ul class="files" id="files"></ul>
+        <div>
+          <label for="f-ref">텍스트 직접 입력 (메모, 회의 기록, 결과 정리 등)</label>
+          <textarea id="f-ref" rows="6" placeholder="1R 기간에 실제로 한 활동과 확인한 내용을 자유롭게 적어주세요."></textarea>
+          <span class="hint" id="ref-count"></span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div>
+          <label for="f-before">멘토링 전 아이디어 (전·후 비교의 ‘전’)</label>
+          <textarea id="f-before" rows="6" placeholder="1R 시작 시점의 아이디어, 목표 고객, 핵심 기능, 사업모델을 적어주세요."></textarea>
+          <div class="actions" style="margin-top:6px"><button type="button" class="small" id="load-before">1차 지원서 내용 불러오기</button></div>
+        </div>
+        <div>
+          <label for="f-after">지금은 이렇게 달라졌습니다 (전·후 비교의 ‘후’)</label>
+          <textarea id="f-after" rows="5" placeholder="멘토링과 활동으로 바뀐 목표 고객, 기능, 사업모델, 확인한 수치 등."></textarea>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2><span class="step">2</span>1:1 멘토링 기록 <span class="hint" style="font-weight:400">(문항 1 · 진출자 전원 필수)</span></h2>
+    <p class="hint">회차마다 한 줄씩 입력합니다. 일시와 횟수는 입력한 내용 그대로 보고서 표에 들어갑니다.</p>
+    <div class="tw"><table class="grid" id="mt"><thead><tr><th>일시</th><th>방식</th><th>주요 주제</th><th>받은 핵심 피드백</th><th>반영해서 한 활동</th><th></th></tr></thead><tbody></tbody></table></div>
+    <div class="actions"><button type="button" class="small" id="m-add">회차 추가</button><span class="hint" id="m-count"></span></div>
+  </section>
+
+  <section class="panel">
+    <div class="doc-head">
+      <h2><span class="step">3</span>창업활동자금 집행내역 <span class="hint" style="font-weight:400">(문항 2와 붙임1)</span></h2>
+      <label class="chk" for="use-fund"><input type="checkbox" id="use-fund" checked>창업활동자금을 사용했습니다</label>
+    </div>
+    <div id="fund-area" style="display:flex;flex-direction:column;gap:12px">
+      <p class="hint">증빙 면제 건(단일결제 부가세 포함 10만원 미만)도 모두 적습니다. 같은 날 같은 가맹점 결제는 합산해서 판단합니다. 취소·부분취소는 최종 실제 집행금액으로 적고, 멘토기관이 불인정한 건은 비고에 ‘잔액보전’이라고 씁니다.</p>
+      <div class="sum">
+        <div><small>배정금액</small><b><input type="text" id="e-budget" value="2000000" inputmode="numeric" aria-label="배정금액" style="font-weight:700;font-size:16px;padding:2px 6px;text-align:right"></b></div>
+        <div><small>집행총액 (잔액보전 제외)</small><b id="e-total">0원</b></div>
+        <div><small>집행잔액</small><b id="e-left">0원</b></div>
+      </div>
+      <div class="tw"><table class="grid" id="et"><thead><tr><th>비목</th><th>집행일자</th><th>거래처명</th><th>세부 품목·내용</th><th>산출근거</th><th>금액(원)</th><th>건별증빙</th><th>비고</th><th>확인</th><th></th></tr></thead><tbody></tbody></table></div>
+      <div class="actions">
+        <button type="button" class="small" id="e-add">집행 건 추가</button>
+        <button type="button" class="small" id="e-csv">엑셀용 CSV 저장</button>
+        <span class="hint" id="e-note"></span>
+      </div>
+      <div>
+        <label for="f-fundres">자금으로 만든 결과물과 그것으로 한 일 (시제품, 디자인, 행사 참가, 테스트·검증, 의견 수렴 등)</label>
+        <textarea id="f-fundres" rows="5" placeholder="예) 로고 디자인 시안 3종을 받아 점주 5명에게 보여주고 의견을 받았다. 모니터 2대를 임차해 화면 설계 시안을 만들고 …"></textarea>
+      </div>
+      <div>
+        <label for="f-fundchg">당초 계획과 달라진 점과 이유 (선택)</label>
+        <textarea id="f-fundchg" rows="2"></textarea>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="doc-head">
+      <h2><span class="step">4</span>AI 솔루션 활용 <span class="hint" style="font-weight:400">(문항 3 · 선택)</span></h2>
+      <label class="chk" for="use-ai"><input type="checkbox" id="use-ai" checked>AI 솔루션을 활용했습니다</label>
+    </div>
+    <div id="ai-area">
+      <label for="f-ai">활용한 AI 솔루션, 어떤 작업에 썼는지, 쓰기 전과 비교한 시간·비용·결과물 변화, 한계와 직접 보완한 점, 앞으로의 활용 계획</label>
+      <textarea id="f-ai" rows="6" placeholder="예) Claude로 1차 지원서를 사업계획서 양식으로 재구성하고, 시장 조사 질문지 초안을 만들었다. 질문지 작성에 이틀 걸리던 것이 반나절로 줄었다. 수치 출처는 직접 확인했다 …"></textarea>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="cols">
+      <div><label for="f-extra">강조하거나 바꾸고 싶은 방향 (선택)</label><textarea id="f-extra" rows="2" placeholder="예) 멘토링 전·후 변화를 표로 분명하게"></textarea></div>
+      <div class="row4" style="grid-template-columns:1fr 1fr;align-content:start">
+        <div><label for="f-len">문항별 분량</label>
+          <select id="f-len"><option value="1000">1,000자 내외</option><option value="1300" selected>1,300자 내외</option><option value="1600">1,600자 내외</option></select></div>
+        <div><label for="f-tier">작성 품질</label>
+          <select id="f-tier"><option value="default" selected>표준</option><option value="complex">정밀 (느림)</option></select></div>
+      </div>
+    </div>
+    <div class="actions">
+      <button type="button" class="primary" id="go">활동보고서 작성</button>
+      <button type="button" id="stop" hidden>중지</button>
+      <span class="status" id="status" role="status"></span>
+    </div>
+  </section>
+
+  <section class="wrap" style="gap:14px" aria-label="활동보고서">
+    <div class="panel" style="gap:10px">
+      <div class="doc-head">
+        <h2 style="font-family:var(--serif);font-size:18px">활동보고서 초안</h2>
+        <div class="actions">
+          <button type="button" id="copy">전체 복사</button>
+          <button type="button" class="primary" id="docx">Word(.docx) 저장</button>
+        </div>
+      </div>
+      <div class="meter" id="meter"></div>
+      <p class="hint">저장되는 파일은 A4, 맑은 고딕 12pt, 줄간격 160%, 표 10pt이고 붙임1(집행 상세내역)이 함께 들어갑니다. 제출은 「성명_1R 활동보고서.zip」 하나로 묶습니다. 안에는 「성명_활동보고서」, 집행 상세내역(엑셀 가능), 건별 증빙, 해당 시 자산보유서약서를 넣습니다. 건별 증빙 영수증과 서약서는 직접 준비해 주세요.</p>
+    </div>
+    <div id="qs" style="display:flex;flex-direction:column;gap:14px"></div>
+    <div class="note">AI가 쓴 초안입니다. 활동보고서에는 실제로 수행한 내용만 써야 합니다. <b>[확인 필요: …]</b> 표시는 자료에 없어서 비워 둔 부분이니 직접 채우거나 지워주세요. 양식 유의사항상 허위 기재가 확인되면 창업활동자금 환수와 지원사업 참여 제한이 있을 수 있습니다.</div>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(function(){
+"use strict";
+var $=function(s){return document.querySelector(s)};
+var QS=[
+ {id:1,title:"1. 1:1 멘토링을 통해 아이디어 고도화 과정에서 어떤 변화와 성과가 있었나요?",tag:"1:1 멘토링",opt:false,
+  guide:["멘토링 진행 현황 (일시, 횟수, 방식, 회차별 주요 주제. 표 활용 권장)","주요 피드백과 이를 반영해 실제 수행한 활동","멘토링을 통해 구체화·고도화된 아이디어의 변화와 성과 (전·후 비교 형태 권장. 목표 고객, 핵심 기능, 사업모델 등)","활동 결과물(설문 결과, 시안, 시제품 등)이 있으면 함께 제시"],
+  dir:"멘토링 참여 사실이나 소감을 나열하지 말고, 멘토링 피드백 → 진출자가 수행한 활동 → 아이디어의 실제 변화가 이어지게 작성"},
+ {id:2,title:"2. 창업활동자금을 어떤 용도로 사용하셨으며, 아이디어 고도화에 어떤 기여가 되었나요?",tag:"창업활동자금",opt:true,
+  guide:["비목별 주요 사용 내용과 각 지출이 필요했던 이유, 사업계획과의 연관성","자금으로 제작·확보한 결과물과 그것을 활용한 테스트, 검증, 의견 수렴","자금 사용으로 구체화·보완된 아이디어, 당초 계획과 달라진 점과 사유","사용 내역·금액은 붙임1(집행 상세내역), 붙임2(건별 증빙)에 증빙"],
+  dir:"무엇에 썼는지보다 그 사용이 아이디어 고도화에 어떻게 이어졌는지가 드러나게, 지출 내용 → 확보한 결과물 → 아이디어의 변화 순으로 작성"},
+ {id:3,title:"3. AI 솔루션은 아이디어 고도화 과정에서 어떻게 활용했고 어떤 영향을 미쳤나요?",tag:"AI솔루션",opt:true,
+  guide:["활용한 AI 솔루션과 활용 목적, 아이디어 고도화 단계별 주요 활용 사례","AI를 쓰지 않았을 때와 비교한 시간 단축, 비용 절감, 결과물 품질의 변화","활용 과정에서 확인한 한계와 직접 보완한 사항, 향후 사업화 과정에서의 AI 활용 계획"],
+  dir:"AI 솔루션을 실제로 어떤 작업에 썼고 그 결과 무엇이 달라졌는지를 중심으로 작성"}
+];
+var CATS=["재료구입비","외주용역비","문헌구입비","지급수수료","여비‧회의비"];
+var BEFORE_SAMPLE=[
+"대기시간을 1/4로 줄여 매장 회전율을 극대화하는 키오스크 맞춤형 퀵오더 시스템(1차 지원 아이디어).",
+"- 문제: 기존 키오스크는 '처음 방문한 불특정 다수' 기준의 공급자 중심 UI라 매일 같은 메뉴를 사는 단골도 메뉴 탐색, 옵션, 포장, 포인트 적립, 결제까지 40~50초를 쓰고, 피크타임 대기열과 회전율 저하가 생긴다.",
+"- 해결: 고객 식별을 첫 화면으로 당기는 선-식별 주문. 전화번호/간편 PIN 입력 시 최근 주문·나만의 메뉴 2~3개만 보여 1터치 결제, 또는 앱의 마이 메뉴 QR 스캔으로 주문서 자동 생성. 목표 10초 이내(약 75% 이상 단축).",
+"- 사업모델: 키오스크 대당 월 1~2만 원 SaaS 구독, 프랜차이즈 본사 API 라이선스·커스텀 개발, POS·VAN사 제휴 수익 쉐어, CRM 리포트 구독.",
+"- 목표 시장: 오피스 밀집 지역(강남·여의도·판교) 테이크아웃 카페 → 중저가 프랜차이즈 → 푸드코트·구내식당·드라이브스루.",
+"- 대표자: 경영지도사(마케팅), 정책금융기관 30년 이상 실무, 도서·칼럼 집필."
+].join("\n");
+
+var state={files:[],out:{1:"",2:"",3:""},busy:false,ctl:null,writing:0,m:[],e:[]};
+var toastT;
+function toast(m){var t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){t.hidden=true},2600)}
+function setStatus(m,err){var s=$("#status");s.textContent=m||"";s.className="status"+(err?" err":"")}
+function len(s){return Array.from(s||"").length}
+function flags(s){return ((s||"").match(/\[(?:확인 필요|입력 필요)[^\]]*\]/g)||[]).length}
+function num(v){return parseInt(String(v==null?"":v).replace(/[^\d]/g,""),10)||0}
+function won(n){return n.toLocaleString("ko-KR")+"원"}
+function ea(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;")}
+function on(i){return !QS[i-1].opt||(i===2?$("#use-fund").checked:$("#use-ai").checked)}
+
+(function(){
+  var d=new Date(),t=new Date(2026,11,1,13,0,0),diff=Math.ceil((t-d)/86400000);
+  $("#dday").textContent=diff>0?"D-"+diff:(diff===0?"D-DAY":"마감");
+})();
+
+/* ---------- question cards ---------- */
+QS.forEach(function(q){
+  var el=document.createElement("article");el.className="q";el.id="q"+q.id;
+  el.innerHTML='<div class="q-head"><h3>'+q.title+'</h3><p>'+q.tag+(q.opt?(q.id===2?" · 창업활동자금 사용자 필수":" · 선택"):" · 진출자 전원 필수")+'</p></div>'+
+  '<div class="q-body">'+
+  '<details class="guide"><summary>양식의 작성 요령 보기</summary><ul>'+q.guide.map(function(g){return"<li>"+g+"</li>"}).join("")+'</ul><p style="margin:6px 0 0">작성 방향: '+q.dir+'</p></details>'+
+  '<textarea id="t'+q.id+'" aria-label="문항 '+q.id+' 본문" placeholder="‘활동보고서 작성’ 버튼을 누르면 이곳에 초안이 채워집니다. 직접 입력하거나 고칠 수도 있습니다."></textarea>'+
+  '<div class="q-foot"><span class="count" id="c'+q.id+'"></span>'+
+  '<div class="redo"><input type="text" id="r'+q.id+'" placeholder="이 문항만 다시 쓸 때 지시 (예: 전·후 비교를 표로)" aria-label="문항 '+q.id+' 다시 쓰기 지시"><button type="button" class="small" data-redo="'+q.id+'">다시 쓰기</button></div></div>'+
+  '</div>';
+  $("#qs").appendChild(el);
+  el.querySelector("textarea").addEventListener("input",function(e){state.out[q.id]=e.target.value;refresh();save()});
+});
+
+function refresh(){
+  var total=0,fl=0;
+  QS.forEach(function(q){
+    var card=$("#q"+q.id);card.hidden=!on(q.id);
+    if(!on(q.id))return;
+    var n=len(state.out[q.id]),f=flags(state.out[q.id]);total+=n;fl+=f;
+    var c=$("#c"+q.id);
+    c.className="count "+(n===0?"":(n>=1000?"ok":"low"));
+    c.innerHTML="공백 포함 <b>"+n.toLocaleString("ko-KR")+"</b>자"+(n>0&&n<1000?" (1,000자 이상 권장)":"")+(f?'<span class="flag">확인 필요 '+f+'곳</span>':"")+(state.writing===q.id?' <span class="writing">· 작성 중…</span>':"");
+  });
+  var pages=estimatePages(),over=pages>7;
+  $("#meter").innerHTML="<span>전체 <b>"+total.toLocaleString("ko-KR")+"</b>자</span><span>예상 분량 <b class='"+(over?"over":"")+"'>약 "+pages.toFixed(1)+"쪽</b> / 본문 7쪽 이내</span>"+(fl?"<span>확인 필요 <b>"+fl+"</b>곳</span>":"")+(over?"<span class='over'>분량 초과 가능성, 일부 줄여주세요</span>":"");
+  $("#docx").disabled=total===0;$("#copy").disabled=total===0;
+  $("#fund-area").hidden=!$("#use-fund").checked;$("#ai-area").hidden=!$("#use-ai").checked;
+}
+/* 12pt · 줄간격 160% · 여백 2cm 기준 대략치: 한 줄 약 40자, 한 쪽 약 36줄 */
+function estimatePages(){
+  var lines=0;
+  QS.forEach(function(q){
+    if(!on(q.id))return;
+    var t=state.out[q.id]||"";if(!t.trim())return;
+    lines+=3;
+    t.split("\n").forEach(function(l){
+      if(/^\s*\|/.test(l)){lines+=1.6;return}
+      if(!l.trim()){lines+=0.35;return}
+      lines+=Math.max(1,Math.ceil(len(l)/40));
+    });
+  });
+  return lines/36;
+}
+
+/* ---------- mentoring rows ---------- */
+function mRender(){
+  var tb=$("#mt tbody");tb.innerHTML="";
+  if(!state.m.length)state.m.push({d:"",mode:"대면",topic:"",fb:"",act:""});
+  state.m.forEach(function(r,i){
+    var tr=document.createElement("tr");
+    tr.innerHTML='<td style="min-width:110px"><input type="text" data-k="d" value="'+ea(r.d)+'" placeholder="10.15 14:00" aria-label="일시"></td>'+
+    '<td style="min-width:90px"><select data-k="mode" aria-label="방식"><option'+(r.mode==="대면"?" selected":"")+'>대면</option><option'+(r.mode==="비대면"?" selected":"")+'>비대면</option></select></td>'+
+    '<td style="min-width:170px"><textarea data-k="topic" rows="2" aria-label="주요 주제">'+ea(r.topic)+'</textarea></td>'+
+    '<td style="min-width:230px"><textarea data-k="fb" rows="2" aria-label="핵심 피드백">'+ea(r.fb)+'</textarea></td>'+
+    '<td style="min-width:230px"><textarea data-k="act" rows="2" aria-label="반영 활동">'+ea(r.act)+'</textarea></td>'+
+    '<td><button type="button" class="small ghost" aria-label="삭제">삭제</button></td>';
+    tr.addEventListener("input",function(e){var k=e.target.getAttribute("data-k");if(k){state.m[i][k]=e.target.value;mCount();save()}});
+    tr.querySelector("button").onclick=function(){state.m.splice(i,1);mRender();save()};
+    tb.appendChild(tr);
+  });
+  mCount();
+}
+function mCount(){
+  var n=state.m.filter(function(r){return r.d.trim()||r.topic.trim()||r.fb.trim()}).length;
+  $("#m-count").textContent=n?"입력된 회차 "+n+"회":"";
+}
+$("#m-add").onclick=function(){state.m.push({d:"",mode:"대면",topic:"",fb:"",act:""});mRender()};
+
+/* ---------- expense rows ---------- */
+function eFlags(){
+  var g={};
+  state.e.forEach(function(r){var k=r.date.trim()+"|"+r.vendor.trim();if(!r.date.trim()&&!r.vendor.trim())return;g[k]=(g[k]||0)+num(r.amt)});
+  return state.e.map(function(r){
+    var a=num(r.amt),k=r.date.trim()+"|"+r.vendor.trim(),gs=(r.date.trim()||r.vendor.trim())?g[k]:a,out=[];
+    if(gs>500000)out.push("멘토기관 사전 승인확인서 첨부");
+    if(gs>=100000)out.push("건별 증빙 제출");
+    else if(a>0)out.push("증빙 면제 가능 (PG·오픈마켓이면 제출)");
+    if(r.cat==="재료구입비"&&a>0&&gs<=500000)out.push("자산성 물품이면 자산보유서약서");
+    return out;
+  });
+}
+function eRender(){
+  var tb=$("#et tbody");tb.innerHTML="";
+  if(!state.e.length)state.e.push({cat:CATS[0],date:"",vendor:"",item:"",basis:"",amt:"",proof:"",note:""});
+  var fl=eFlags();
+  state.e.forEach(function(r,i){
+    var tr=document.createElement("tr");
+    tr.innerHTML='<td style="min-width:110px"><select data-k="cat" aria-label="비목">'+CATS.map(function(c){return"<option"+(r.cat===c?" selected":"")+">"+c+"</option>"}).join("")+'</select></td>'+
+    '<td style="min-width:72px"><input type="text" data-k="date" value="'+ea(r.date)+'" placeholder="10.22" aria-label="집행일자"></td>'+
+    '<td style="min-width:120px"><input type="text" data-k="vendor" value="'+ea(r.vendor)+'" aria-label="거래처명"></td>'+
+    '<td style="min-width:170px"><textarea data-k="item" rows="2" aria-label="세부 품목·내용">'+ea(r.item)+'</textarea></td>'+
+    '<td style="min-width:130px"><textarea data-k="basis" rows="2" placeholder="272,000원 x 1대" aria-label="산출근거">'+ea(r.basis)+'</textarea></td>'+
+    '<td class="num" style="min-width:96px"><input type="text" inputmode="numeric" data-k="amt" value="'+(r.amt?num(r.amt).toLocaleString("ko-KR"):"")+'" aria-label="금액"></td>'+
+    '<td style="min-width:70px"><input type="text" data-k="proof" value="'+ea(r.proof)+'" placeholder="p.2~3" aria-label="건별증빙 쪽"></td>'+
+    '<td style="min-width:110px"><input type="text" data-k="note" value="'+ea(r.note)+'" placeholder="잔액보전 등" aria-label="비고"></td>'+
+    '<td class="flags" data-flag="'+i+'">'+fl[i].join("<br>")+'</td>'+
+    '<td><button type="button" class="small ghost" aria-label="삭제">삭제</button></td>';
+    tr.addEventListener("input",function(e){
+      var k=e.target.getAttribute("data-k");if(!k)return;
+      state.e[i][k]=e.target.value;
+      if(k==="amt"){var p=e.target.selectionStart,old=e.target.value.length;e.target.value=num(e.target.value)?num(e.target.value).toLocaleString("ko-KR"):"";var d=e.target.value.length-old;try{e.target.setSelectionRange(p+d,p+d)}catch(x){}}
+      eSummary();save();
+    });
+    tr.addEventListener("change",function(e){if(e.target.getAttribute("data-k")==="cat"){state.e[i].cat=e.target.value;eSummary()}});
+    tr.querySelector("button").onclick=function(){state.e.splice(i,1);eRender();save()};
+    tb.appendChild(tr);
+  });
+  eSummary();
+}
+function eTotals(){
+  var total=0,by={};
+  CATS.forEach(function(c){by[c]=0});
+  state.e.forEach(function(r){
+    var a=num(r.amt);if(/잔액보전/.test(r.note))return;
+    total+=a;by[r.cat]=(by[r.cat]||0)+a;
+  });
+  return {total:total,by:by};
+}
+function eSummary(){
+  var t=eTotals(),b=num($("#e-budget").value),left=b-t.total;
+  $("#e-total").textContent=won(t.total);
+  var l=$("#e-left");l.textContent=won(left);l.className=left<0?"neg":"";
+  var fl=eFlags();
+  document.querySelectorAll("#et td.flags").forEach(function(td){td.innerHTML=(fl[+td.getAttribute("data-flag")]||[]).join("<br>")});
+  var n=state.e.filter(function(r){return num(r.amt)>0}).length;
+  $("#e-note").textContent=n?n+"건 입력됨"+(left<0?" · 배정금액을 초과했습니다":""):"";
+}
+$("#e-add").onclick=function(){state.e.push({cat:CATS[0],date:"",vendor:"",item:"",basis:"",amt:"",proof:"",note:""});eRender()};
+$("#e-budget").addEventListener("input",function(e){var n=num(e.target.value);e.target.value=n?n.toLocaleString("ko-KR"):"";eSummary();save()});
+function eRowsOrdered(){
+  var out=[];
+  CATS.forEach(function(c){
+    var rows=state.e.filter(function(r){return r.cat===c&&(num(r.amt)>0||r.vendor.trim()||r.item.trim())});
+    rows.forEach(function(r,i){out.push({cat:c,no:i+1,r:r,sub:false})});
+    if(rows.length){
+      var s=rows.reduce(function(a,r){return a+(/잔액보전/.test(r.note)?0:num(r.amt))},0);
+      out.push({cat:c,sub:true,amt:s,hasHold:rows.some(function(r){return /잔액보전/.test(r.note)})});
+    }
+  });
+  return out;
+}
+function csvText(){
+  var t=eTotals(),b=num($("#e-budget").value);
+  var rows=[["배정금액",b,"집행총액",t.total,"집행잔액",b-t.total],[],["집행비목","순번","집행일자","거래처명","세부 품목·내용","산출근거","금액(원)","건별증빙","비고"]];
+  eRowsOrdered().forEach(function(x){
+    if(x.sub)rows.push([x.cat+" 소계","","","","","",x.amt,"",x.hasHold?"잔액보전 제외":""]);
+    else rows.push([x.cat,x.no,x.r.date,x.r.vendor,x.r.item,x.r.basis,num(x.r.amt),x.r.proof,x.r.note]);
+  });
+  rows.push(["총 합계("+state.e.filter(function(r){return num(r.amt)>0}).length+"건)","","","","","",t.total,"","잔액보전 제외"]);
+  return "﻿"+rows.map(function(r){return r.map(function(c){c=String(c==null?"":c);return /[",\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c}).join(",")}).join("\r\n");
+}
+$("#e-csv").onclick=async function(){
+  var dl=null;try{dl=await window.claude.use("downloads")}catch(e){}
+  if(!dl){toast("이 보기에서는 파일 저장이 막혀 있습니다");return}
+  try{await dl.save({filename:(($("#f-name").value.trim()||"작성자"))+"_집행 상세내역.csv",data:csvText()});toast("저장했습니다")}
+  catch(e){if(!e||e.code!=="declined")toast("저장하지 못했습니다")}
+};
+
+/* ---------- persistence: 이 브라우저 + 내 계정 ---------- */
+var FIELDS=["f-name","f-nick","f-mentor","f-date","f-ref","f-before","f-after","f-fundres","f-fundchg","f-ai","f-extra","f-len","f-tier","e-budget"];
+var CHKS=["use-fund","use-ai"];
+var LSKEY="modoo-ar-v1";
+function okData(o){return !!(o&&typeof o==="object"&&o.out&&typeof o.out==="object")}
+function collect(){
+  var o={out:state.out,m:state.m,e:state.e,savedAt:Date.now()};
+  FIELDS.forEach(function(id){o[id]=$("#"+id).value});CHKS.forEach(function(id){o[id]=$("#"+id).checked});return o;
+}
+function applyData(o){
+  o=JSON.parse(JSON.stringify(o));
+  FIELDS.forEach(function(id){if(typeof o[id]==="string")$("#"+id).value=o[id]});
+  CHKS.forEach(function(id){if(typeof o[id]==="boolean")$("#"+id).checked=o[id]});
+  [1,2,3].forEach(function(i){state.out[i]=(o.out&&o.out[i])||"";$("#t"+i).value=state.out[i]});
+  state.m=Array.isArray(o.m)?o.m:[];state.e=Array.isArray(o.e)?o.e:[];
+  mRender();eRender();refCount();refresh();
+}
+function save(){try{localStorage.setItem(LSKEY,JSON.stringify(collect()))}catch(e){}cloudSchedule()}
+FIELDS.forEach(function(id){$("#"+id).addEventListener("input",function(){refCount();save()})});
+CHKS.forEach(function(id){$("#"+id).addEventListener("change",function(){refresh();save()})});
+
+/* ---------- cloud save: 내 계정의 비공개 영역 ---------- */
+var cloud={db:null,id:null,ready:false,busy:false,dirty:false,t:null,off:false,last:0,edited:false,fail:0};
+function hm(ts){try{return new Date(ts).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}catch(e){return ""}}
+function cs(msg,err){var s=$("#cloud-status");s.textContent=msg;s.className="status"+(err?" err":"")}
+function colRef(){return cloud.db.collection("data/users/"+cloud.id)}
+function curRef(){return colRef().doc("current")}
+function cloudOk(){cs("내 계정에 자동 저장됩니다"+(cloud.last?" · 마지막 저장 "+hm(cloud.last):"")+" · 저장한 내용은 나만 볼 수 있습니다.")}
+function cloudOffMsg(){cs("이 브라우저에만 저장됩니다. Claude에 로그인해 편집 가능한 권한으로 열면 내 계정에 자동 저장됩니다. 다른 기기로 옮길 때는 백업 파일을 쓰세요.")}
+function tooBig(o){return new TextEncoder().encode(JSON.stringify(o)).length>240000}
+function cloudSchedule(){
+  cloud.edited=true;
+  if(!cloud.db||!cloud.ready||cloud.off)return;
+  cloud.dirty=true;cs("저장 중…");clearTimeout(cloud.t);cloud.t=setTimeout(cloudFlush,1800);
+}
+async function cloudFlush(){
+  if(cloud.busy||!cloud.dirty||cloud.off)return;
+  cloud.busy=true;cloud.dirty=false;
+  var retry=0;
+  try{
+    var o=collect();
+    if(tooBig(o)){cs("내용이 너무 커서 계정에 저장하지 못했습니다. 참고자료 텍스트를 줄이거나 백업 파일로 보관하세요.",true);return}
+    await curRef().set({v:1,savedAt:o.savedAt,data:o});
+    cloud.last=o.savedAt;cloud.fail=0;cloudOk();
+  }catch(e){
+    if(e&&e.code==="invalid_argument"){cloud.off=true;cs("이 링크의 권한으로는 계정 저장을 쓸 수 없습니다. 이 브라우저에는 저장되고, 백업 파일로 보관할 수 있습니다.",true)}
+    else if(e&&e.code==="quota_exceeded"){cs("저장 공간이 가득 찼습니다. 오래된 저장본을 삭제해 주세요.",true)}
+    else{
+      cloud.dirty=true;cloud.fail++;
+      if(cloud.fail<3){retry=8000;cs("계정 저장에 실패했습니다. 잠시 뒤 다시 시도합니다.",true)}
+      else cs("자동 저장이 멈췄습니다. ‘지금 저장’을 눌러 다시 시도해 주세요.",true);
+    }
+  }finally{
+    cloud.busy=false;
+    if(retry&&!cloud.off){clearTimeout(cloud.t);cloud.t=setTimeout(cloudFlush,retry)}
+    else if(cloud.dirty&&!cloud.off&&cloud.fail===0){clearTimeout(cloud.t);cloud.t=setTimeout(cloudFlush,600)}
+  }
+}
+async function cloudInit(localSaved){
+  try{
+    var db=await window.claude.use("db"),user=await window.claude.use("user");
+    var id=user?await user.id():null;
+    if(!db||!id){cloudOffMsg();refreshVersions();return}
+    cloud.db=db;cloud.id=id;
+    var snap=await curRef().get();
+    if(snap.exists){
+      var d=snap.data();
+      cloud.last=(d&&d.savedAt)||0;
+      if(d&&okData(d.data)&&cloud.last>localSaved&&!cloud.edited){
+        applyData(d.data);try{localStorage.setItem(LSKEY,JSON.stringify(d.data))}catch(e){}
+        toast("내 계정에 저장된 최근 작업을 불러왔습니다");
+      }
+    }
+    cloud.ready=true;
+    if(cloud.edited||localSaved>cloud.last){cloud.dirty=true;cloud.t=setTimeout(cloudFlush,300)}
+    cloudOk();refreshVersions();
+  }catch(e){cloudOffMsg();refreshVersions()}
+}
+function arm(btn,text,fn){
+  if(btn.getAttribute("data-armed")){clearTimeout(btn._t);btn.removeAttribute("data-armed");btn.textContent=btn.getAttribute("data-label");fn();return}
+  btn.setAttribute("data-label",btn.textContent);btn.setAttribute("data-armed","1");btn.textContent=text;
+  btn._t=setTimeout(function(){btn.removeAttribute("data-armed");btn.textContent=btn.getAttribute("data-label")},5000);
+}
+async function refreshVersions(){
+  var ul=$("#v-list");ul.innerHTML="";
+  function note(t){var li=document.createElement("li");li.textContent=t;ul.appendChild(li)}
+  if(!cloud.db||cloud.off){note("내 계정에 저장할 수 있을 때 저장본을 만들 수 있습니다. 지금은 ‘백업 파일 저장’을 이용하세요.");return}
+  var snap;try{snap=await colRef().get()}catch(e){note("저장본 목록을 불러오지 못했습니다.");return}
+  var vs=snap.docs.filter(function(d){return d.id.indexOf("v_")===0}).map(function(d){return {id:d.id,v:d.data()||{}}}).sort(function(a,b){return (b.v.savedAt||0)-(a.v.savedAt||0)});
+  if(!vs.length){note("아직 저장본이 없습니다. 큰 수정 전에 하나 만들어 두면 언제든 돌아올 수 있어요. (최대 20개)");return}
+  vs.forEach(function(x){
+    var li=document.createElement("li"),sp=document.createElement("span"),b1=document.createElement("button"),b2=document.createElement("button");
+    sp.textContent=(x.v.label||"저장본")+" · "+hm(x.v.savedAt);
+    b1.type="button";b1.className="small";b1.textContent="불러오기";
+    b1.onclick=function(){arm(b1,"현재 내용을 덮어씁니다. 한 번 더",function(){
+      if(!okData(x.v.data)){toast("이 저장본을 읽지 못했습니다");return}
+      applyData(x.v.data);save();toast("저장본을 불러왔습니다")})};
+    b2.type="button";b2.className="small ghost";b2.textContent="삭제";
+    b2.onclick=function(){arm(b2,"정말 삭제? 한 번 더",async function(){
+      try{await colRef().doc(x.id).delete();refreshVersions()}catch(e){toast("삭제하지 못했습니다")}})};
+    var w=document.createElement("span");w.style.display="flex";w.style.gap="6px";w.appendChild(b1);w.appendChild(b2);
+    li.appendChild(sp);li.appendChild(w);ul.appendChild(li);
+  });
+}
+$("#v-make").onclick=async function(){
+  if(!cloud.db||!cloud.ready||cloud.off){toast("계정 저장을 쓸 수 없어 저장본을 만들 수 없습니다. 백업 파일을 이용하세요");return}
+  try{
+    var snap=await colRef().get();
+    if(snap.docs.filter(function(d){return d.id.indexOf("v_")===0}).length>=20){toast("저장본은 20개까지입니다. 하나를 삭제해 주세요");return}
+    var o=collect();if(tooBig(o)){toast("내용이 너무 커서 저장본을 만들 수 없습니다");return}
+    await colRef().doc("v_"+Date.now()).set({v:1,label:$("#v-label").value.trim()||"저장본",savedAt:o.savedAt,data:o});
+    $("#v-label").value="";toast("저장본을 만들었습니다");refreshVersions();
+  }catch(e){toast(e&&e.code==="quota_exceeded"?"저장 공간이 가득 찼습니다":"저장본을 만들지 못했습니다")}
+};
+$("#save-now").onclick=async function(){
+  save();
+  if(cloud.db&&cloud.ready&&!cloud.off){clearTimeout(cloud.t);cloud.dirty=true;cloud.fail=0;await cloudFlush();if(!cloud.off&&!cloud.dirty)toast("내 계정에 저장했습니다")}
+  else toast("이 브라우저에 저장했습니다");
+};
+$("#backup").onclick=async function(){
+  var dl=null;try{dl=await window.claude.use("downloads")}catch(e){}
+  if(!dl){toast("이 보기에서는 파일 저장이 막혀 있습니다");return}
+  try{await dl.save({filename:($("#f-name").value.trim()||"작성자")+"_활동보고서_백업.json",data:JSON.stringify(collect())});toast("백업 파일을 저장했습니다")}
+  catch(e){if(!e||e.code!=="declined")toast("저장하지 못했습니다")}
+};
+$("#restore").onclick=function(){$("#restore-file").click()};
+$("#restore-file").onchange=async function(e){
+  var f=e.target.files[0];e.target.value="";if(!f)return;
+  try{var o=JSON.parse(await f.text());if(!okData(o))throw new Error("bad");applyData(o);save();toast("백업을 불러왔습니다 (이전 내용은 덮어썼습니다)")}
+  catch(x){toast("백업 파일을 읽지 못했습니다")}
+};
+var localSaved=0;
+function initLocal(){
+  try{var o=JSON.parse(localStorage.getItem(LSKEY)||"null");if(okData(o)){applyData(o);localSaved=o.savedAt||0}}catch(e){}
+}
+
+function refCount(){
+  var n=len($("#f-ref").value)+state.files.reduce(function(a,f){return a+len(f.text)},0);
+  $("#ref-count").textContent=n?"참고자료 총 "+n.toLocaleString("ko-KR")+"자":"";
+}
+
+/* ---------- file reading ---------- */
+function loadScript(src){return new Promise(function(res,rej){var s=document.createElement("script");s.src=src;s.onload=res;s.onerror=function(){rej(new Error("라이브러리를 불러오지 못했습니다"))};document.head.appendChild(s)})}
+var libP={};
+function lib(name,src,check){if(check())return Promise.resolve();if(!libP[name])libP[name]=loadScript(src);return libP[name]}
+async function readFile(f){
+  var ext=(f.name.split(".").pop()||"").toLowerCase();
+  if(["txt","md","csv","json"].indexOf(ext)>=0)return await f.text();
+  if(ext==="docx"){
+    await lib("mammoth","https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js",function(){return window.mammoth});
+    return (await window.mammoth.extractRawText({arrayBuffer:await f.arrayBuffer()})).value;
+  }
+  if(ext==="pdf"){
+    await lib("pdfjs","https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js",function(){return window.pdfjsLib});
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+    var pdf=await window.pdfjsLib.getDocument({data:new Uint8Array(await f.arrayBuffer()),disableWorker:true}).promise,out=[];
+    for(var p=1;p<=pdf.numPages;p++){var pg=await pdf.getPage(p),tc=await pg.getTextContent();out.push(tc.items.map(function(i){return i.str+(i.hasEOL?"\n":"")}).join(" "))}
+    return out.join("\n\n");
+  }
+  throw new Error("지원하지 않는 형식입니다 (."+ext+")");
+}
+async function addFiles(list){
+  for(var i=0;i<list.length;i++){
+    var f=list[i];
+    try{
+      setStatus("읽는 중: "+f.name);
+      var t=(await readFile(f)).replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim();
+      if(!t)throw new Error("글자를 읽을 수 없습니다 (스캔 이미지 PDF일 수 있어요)");
+      state.files.push({name:f.name,text:t});setStatus("");
+    }catch(e){setStatus(f.name+": "+(e&&e.message?e.message:"읽지 못했습니다")+". 텍스트로 붙여넣어 주세요.",true)}
+  }
+  renderFiles();
+}
+function renderFiles(){
+  var ul=$("#files");ul.innerHTML="";
+  state.files.forEach(function(f,i){
+    var li=document.createElement("li"),sp=document.createElement("span"),b=document.createElement("button");
+    sp.textContent=f.name+" · "+len(f.text).toLocaleString("ko-KR")+"자";
+    b.type="button";b.className="small ghost";b.textContent="삭제";b.setAttribute("aria-label",f.name+" 삭제");
+    b.onclick=function(){state.files.splice(i,1);renderFiles()};
+    li.appendChild(sp);li.appendChild(b);ul.appendChild(li);
+  });
+  refCount();
+}
+$("#pick").onclick=function(){$("#file").click()};
+$("#file").onchange=function(e){addFiles(Array.from(e.target.files));e.target.value=""};
+var drop=$("#drop");
+["dragenter","dragover"].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.add("on")})});
+["dragleave","drop"].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove("on")})});
+drop.addEventListener("drop",function(e){addFiles(Array.from(e.dataTransfer.files))});
+$("#load-before").onclick=function(){var b=$("#f-before");b.value=(b.value.trim()?b.value.trim()+"\n\n":"")+BEFORE_SAMPLE;save();toast("1차 지원서 내용을 불러왔습니다")};
+
+/* ---------- prompt ---------- */
+function mentoringText(){
+  var rows=state.m.filter(function(r){return r.d.trim()||r.topic.trim()||r.fb.trim()||r.act.trim()});
+  if(!rows.length)return "(입력 없음)";
+  return "총 "+rows.length+"회\n"+rows.map(function(r,i){return (i+1)+"회차 | 일시: "+(r.d||"미기재")+" | 방식: "+r.mode+" | 주제: "+(r.topic||"미기재")+" | 핵심 피드백: "+(r.fb||"미기재")+" | 반영 활동: "+(r.act||"미기재")}).join("\n");
+}
+function fundText(){
+  var ord=eRowsOrdered();if(!ord.length)return "(입력 없음)";
+  var t=eTotals(),b=num($("#e-budget").value);
+  var s="배정금액 "+won(b)+" / 집행총액 "+won(t.total)+" / 집행잔액 "+won(b-t.total)+" (잔액보전 표시 건 제외)\n";
+  ord.forEach(function(x){
+    if(x.sub)s+="  → "+x.cat+" 소계 "+won(x.amt)+"\n";
+    else s+="- ["+x.cat+"] "+(x.r.date||"일자미기재")+" | "+(x.r.vendor||"거래처미기재")+" | "+(x.r.item||"내용미기재")+" | 산출근거 "+(x.r.basis||"-")+" | "+won(num(x.r.amt))+(x.r.note?" | 비고 "+x.r.note:"")+"\n";
+  });
+  return s;
+}
+function gather(){
+  var ref=[],t=$("#f-ref").value.trim();
+  if(t)ref.push("[직접 입력]\n"+t);
+  state.files.forEach(function(f){ref.push("[첨부: "+f.name+"]\n"+f.text)});
+  var j=ref.join("\n\n");if(len(j)>100000)j=Array.from(j).slice(0,100000).join("")+"\n…(이하 생략)";
+  return {name:$("#f-name").value.trim(),nick:$("#f-nick").value.trim(),mentor:$("#f-mentor").value.trim(),ref:j,
+    before:$("#f-before").value.trim(),after:$("#f-after").value.trim(),fundres:$("#f-fundres").value.trim(),fundchg:$("#f-fundchg").value.trim(),
+    ai:$("#f-ai").value.trim(),extra:$("#f-extra").value.trim(),n:parseInt($("#f-len").value,10)||1300};
+}
+function enough(g){
+  return len(g.ref)+len(g.before)+len(g.after)+len(g.fundres)+len(g.ai)+state.m.reduce(function(a,r){return a+len(r.topic)+len(r.fb)+len(r.act)},0)>=60;
+}
+function formSpec(ids){
+  return QS.filter(function(q){return ids.indexOf(q.id)>=0}).map(function(q){
+    return "문항 "+q.title+" ["+q.tag+"]\n"+q.guide.map(function(g,i){return "  "+(i+1)+") "+g}).join("\n")+"\n  작성 방향: "+q.dir;
+  }).join("\n\n");
+}
+var RULES=[
+"1. 활동보고서는 제출 시점까지 실제로 수행·활용한 내용만 쓴다. [입력 자료]에 없는 활동, 일시, 횟수, 금액, 인터뷰, 결과물, 성과를 만들어내지 않는다. 앞으로의 계획은 문항 3의 '향후 활용 계획'에서만 짧게 쓴다.",
+"2. 입력에 없지만 문항에 필요한 정보는 지어내지 말고 그 자리에 [확인 필요: 무엇을 채워야 하는지]를 남긴다.",
+"3. 참여 사실이나 세부 수행 내용을 나열하지 않는다. '지원사항을 어떻게 활용했고 → 그 결과 무엇을 확인·확보했으며 → 그로 인해 아이디어가 어떻게 보완·구체화되었는지'가 한 흐름으로 이어지게 쓴다.",
+"4. 멘토링 일시·횟수·방식·주제, 지출 금액·비목·거래처는 입력된 값을 그대로 쓴다. 숫자를 바꾸거나 합산을 새로 계산하지 말고 입력 자료에 적힌 소계·총액을 쓴다.",
+"5. 가능하면 전·후 비교를 쓴다. '멘토링 전'은 [멘토링 전 아이디어], '후'는 [지금 달라진 점]과 활동 기록에서만 가져온다.",
+"6. 증빙은 '붙임1(집행 상세내역), 붙임2(건별 증빙) 참조'처럼 가리키기만 하고 증빙 내용을 만들어내지 않는다.",
+"7. 공공 보고서 문체(~하였다, ~하였음, ~로 보완함)를 일관되게 쓴다. 과장과 홍보 문구, 감상과 소감 나열을 피한다. 소제목과 짧은 문장·목록을 섞어 읽기 쉽게 한다.",
+"8. 서식: 소제목은 줄 맨 앞에 '■ '로 시작한다. 목록은 '- '로 시작한다. 표는 파이프(|) 마크다운 표로 쓰고 첫 줄은 머리글, 둘째 줄은 구분선(---)으로 한다. '#' 제목, 코드블록, 이모지는 쓰지 않는다. 강조는 **굵게**만 가끔 쓴다."
+].join("\n");
+function activeIds(){return [1,2,3].filter(on)}
+function dataBlock(g,ids){
+  var s="[기본정보]\n- 대표자: "+g.name+" ("+g.nick+")\n- 멘토기관: "+g.mentor+"\n\n";
+  s+="[멘토링 전 아이디어]\n"+(g.before||"(입력 없음)")+"\n\n[지금 달라진 점]\n"+(g.after||"(입력 없음)")+"\n\n";
+  s+="[1:1 멘토링 기록]\n"+mentoringText()+"\n\n";
+  if(ids.indexOf(2)>=0)s+="[창업활동자금 집행내역]\n"+fundText()+"\n[자금으로 만든 결과물과 활용]\n"+(g.fundres||"(입력 없음)")+"\n[당초 계획과 달라진 점]\n"+(g.fundchg||"(입력 없음)")+"\n\n";
+  if(ids.indexOf(3)>=0)s+="[AI 솔루션 활용 메모]\n"+(g.ai||"(입력 없음)")+"\n\n";
+  s+="[기타 참고자료]\n"+(g.ref||"(없음)")+(g.extra?"\n\n[작성자 요청]\n"+g.extra:"");
+  return s;
+}
+function head(){return "당신은 중소벤처기업부 '모두의 창업 프로젝트' 1R 활동보고서 작성을 돕는 전문 컨설턴트입니다. 작성자는 경영지도사이자 저술가입니다. 활동보고서는 1R 기간 중 실제 수행한 활동과 그에 따른 변화·성과를 보고하는 문서입니다.\n\n"}
+function promptAll(g){
+  var ids=activeIds(),fmt=ids.map(function(i){return "=====Q"+i+"=====\n(문항 "+i+" 본문)"}).join("\n");
+  return head()+"[양식] 아래 문항을 씁니다. 요령은 예시이므로 모든 항목을 순서대로 쓸 필요는 없고 문항 취지에 맞게 구성합니다. 문항별 1,000자 이상 권장입니다.\n\n"+formSpec(ids)+
+  "\n\n[작성 원칙]\n"+RULES+"\n\n[분량] 문항마다 공백 포함 "+g.n+"자 내외(최소 1,000자). 표 안 글자도 포함됩니다. 문항 합계가 A4 7쪽(12pt, 줄간격 160%)을 넘지 않게 합니다.\n\n"+
+  "[출력 형식] 아래 구분 줄을 정확히 이 형태로 쓰고, 문항 제목은 본문에 다시 쓰지 않습니다. 다른 설명이나 머리말은 쓰지 않습니다.\n"+fmt+"\n\n[입력 자료]\n"+dataBlock(g,ids);
+}
+function promptOne(g,id,instr){
+  var others=QS.filter(function(q){return q.id!==id&&on(q.id)&&state.out[q.id].trim()}).map(function(q){return "[문항 "+q.id+" 현재 본문]\n"+state.out[q.id]}).join("\n\n"),cur=state.out[id].trim();
+  return head()+"[양식] 아래 문항 하나를 다시 씁니다.\n\n"+formSpec([id])+"\n\n[작성 원칙]\n"+RULES+"\n\n[분량] 공백 포함 "+g.n+"자 내외(최소 1,000자).\n\n[출력 형식] 문항 제목 없이 본문만 출력합니다. 다른 설명은 쓰지 않습니다.\n\n"+
+  (others?"[다른 문항 현재 내용 — 용어와 수치를 일관되게 맞출 것]\n"+others+"\n\n":"")+(cur?"[이 문항의 현재 초안]\n"+cur+"\n\n":"")+(instr?"[이번 수정 지시]\n"+instr+"\n\n":"")+"[입력 자료]\n"+dataBlock(g,[id]);
+}
+
+/* ---------- generation ---------- */
+function parseSections(text){
+  var res={},re=/=====Q([1-3])=====/g,m,idx=[];
+  while((m=re.exec(text))!==null)idx.push({id:+m[1],start:m.index,end:re.lastIndex});
+  idx.forEach(function(x,i){res[x.id]=text.slice(x.end,i+1<idx.length?idx[i+1].start:text.length).replace(/^\s+/,"").replace(/\s+$/,"")});
+  return {res:res,last:idx.length?idx[idx.length-1].id:0};
+}
+function errCopy(e){
+  var c=e&&e.code;
+  if(c==="not_granted"||c==="sampling_disabled"||c==="capability_disabled"||c==="not_declared")return "이 페이지에서 Claude 사용이 허용되지 않았습니다. 허용 후 다시 눌러주세요.";
+  if(c==="rate_limited")return "요청이 많거나 사용 한도에 도달했습니다. 잠시 뒤 다시 시도해주세요.";
+  if(c==="prompt_too_large")return "자료가 너무 깁니다. 참고자료를 줄여주세요.";
+  if(c==="session_expired")return "로그인이 만료되었습니다. 페이지를 새로고침해주세요.";
+  if(c==="refused")return "이 입력으로는 작성하지 못했습니다. 자료 내용을 확인해주세요.";
+  return "작성이 중단되었습니다. 이미 채워진 부분은 남아 있으니 다시 시도해주세요.";
+}
+function setBusy(b){state.busy=b;$("#go").disabled=b;$("#stop").hidden=!b;document.querySelectorAll("[data-redo]").forEach(function(x){x.disabled=b})}
+async function getSample(){var s=null;try{s=await window.claude.use("sample")}catch(e){}return s}
+var armed=false;
+async function generateAll(){
+  if(state.busy)return;
+  var g=gather();
+  if(!enough(g)){setStatus("활동 기록이나 참고자료를 먼저 넣어주세요.",true);return}
+  if(activeIds().some(function(i){return state.out[i].trim()})&&!armed){
+    armed=true;setStatus("기존 초안이 있습니다. 덮어쓰려면 ‘활동보고서 작성’을 한 번 더 누르세요.",true);setTimeout(function(){armed=false},8000);return;
+  }
+  armed=false;
+  var sample=await getSample();
+  if(!sample){setStatus("이 보기에서는 AI 작성 기능을 쓸 수 없습니다. Claude 앱이나 claude.ai에서 열어주세요.",true);return}
+  state.ctl=new AbortController();setBusy(true);setStatus("분석하고 구성하는 중입니다. 첫 글이 나오기까지 1분 안팎 걸릴 수 있어요.");
+  var first=true;
+  try{
+    var r=await sample(promptAll(g),{signal:state.ctl.signal,cache:false,modelTier:$("#f-tier").value,onText:function(u){
+      if(first){first=false;activeIds().forEach(function(i){state.out[i]="";$("#t"+i).value=""});setStatus("작성 중…")}
+      apply(u.text,true);
+    }});
+    apply(r.text,false);
+    setStatus(r.truncated?"길이 제한으로 끝부분이 잘렸을 수 있습니다. 해당 문항만 ‘다시 쓰기’를 해주세요.":"작성을 마쳤습니다. 사실과 [확인 필요] 표시를 점검해주세요.");
+  }catch(e){
+    if(e&&e.text)apply(e.text,false);
+    if(!e||e.code!=="cancelled")setStatus(errCopy(e),true);else setStatus("중지했습니다.");
+  }finally{state.writing=0;setBusy(false);refresh();save()}
+}
+function apply(text,streaming){
+  var p=parseSections(text);
+  [1,2,3].forEach(function(i){if(p.res[i]!==undefined&&on(i)){state.out[i]=p.res[i];$("#t"+i).value=p.res[i]}});
+  state.writing=streaming?p.last:0;refresh();
+}
+async function redoOne(id){
+  if(state.busy)return;
+  var g=gather();
+  if(!enough(g)){setStatus("활동 기록이나 참고자료를 먼저 넣어주세요.",true);return}
+  var sample=await getSample();
+  if(!sample){setStatus("이 보기에서는 AI 작성 기능을 쓸 수 없습니다.",true);return}
+  var instr=$("#r"+id).value.trim(),ta=$("#t"+id),strip=function(t){return t.replace(/^=====Q\d=====\s*/,"")};
+  state.ctl=new AbortController();setBusy(true);state.writing=id;refresh();setStatus("문항 "+id+" 다시 쓰는 중…");
+  try{
+    var r=await sample(promptOne(g,id,instr),{signal:state.ctl.signal,cache:false,modelTier:$("#f-tier").value,onText:function(u){var t=strip(u.text);ta.value=t;state.out[id]=t;refresh()}});
+    var t=strip(r.text);ta.value=t;state.out[id]=t;setStatus("문항 "+id+"을 다시 썼습니다.");
+  }catch(e){
+    if(e&&e.text){var t2=strip(e.text);ta.value=t2;state.out[id]=t2}
+    if(!e||e.code!=="cancelled")setStatus(errCopy(e),true);else setStatus("중지했습니다.");
+  }finally{state.writing=0;setBusy(false);refresh();save()}
+}
+$("#go").onclick=generateAll;
+$("#stop").onclick=function(){if(state.ctl)state.ctl.abort()};
+document.addEventListener("click",function(e){var b=e.target.closest("[data-redo]");if(b)redoOne(+b.getAttribute("data-redo"))});
+
+/* ---------- copy ---------- */
+function fullText(){
+  return "2026년 모두의 창업 프로젝트\n1R 활동보고서\n"+$("#f-date").value+"\n멘토기관: "+$("#f-mentor").value+" / 이름: "+$("#f-name").value+" / 닉네임: "+$("#f-nick").value+"\n\n"+
+  activeIds().map(function(i){return QS[i-1].title+" ["+QS[i-1].tag+"]\n\n"+(state.out[i]||"")}).join("\n\n\n");
+}
+$("#copy").onclick=async function(){
+  try{await navigator.clipboard.writeText(fullText());toast("전체 내용을 복사했습니다")}
+  catch(e){toast("복사가 막혀 있습니다. 각 문항을 직접 선택해 복사해주세요")}
+};
+
+/* ---------- docx ---------- */
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+var FONT='<w:rFonts w:ascii="맑은 고딕" w:hAnsi="맑은 고딕" w:eastAsia="맑은 고딕" w:cs="맑은 고딕"/>';
+function run(t,o){o=o||{};var sz=o.sz||24;
+  return '<w:r><w:rPr>'+FONT+(o.b?'<w:b/>':'')+(o.color?'<w:color w:val="'+o.color+'"/>':'')+'<w:sz w:val="'+sz+'"/><w:szCs w:val="'+sz+'"/></w:rPr><w:t xml:space="preserve">'+esc(t)+'</w:t></w:r>'}
+function runs(t,o){return t.split(/(\*\*[^*]+\*\*)/).filter(Boolean).map(function(p){
+  if(p.length>4&&p.slice(0,2)==="**"&&p.slice(-2)==="**")return run(p.slice(2,-2),Object.assign({},o,{b:true}));return run(p,o)}).join("")}
+function para(inner,o){o=o||{};
+  return '<w:p><w:pPr>'+(o.keep?'<w:keepNext/>':'')+(o.shd?'<w:shd w:val="clear" w:color="auto" w:fill="'+o.shd+'"/>':'')+
+  '<w:spacing w:before="'+(o.before||0)+'" w:after="'+(o.after==null?60:o.after)+'" w:line="'+(o.line||384)+'" w:lineRule="auto"/>'+
+  (o.left?'<w:ind w:left="'+o.left+'" w:hanging="'+(o.hang||0)+'"/>':'')+(o.jc?'<w:jc w:val="'+o.jc+'"/>':'')+'</w:pPr>'+inner+'</w:p>'}
+var BORDER='<w:tblBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="808080"/><w:left w:val="single" w:sz="4" w:space="0" w:color="808080"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="808080"/><w:right w:val="single" w:sz="4" w:space="0" w:color="808080"/><w:insideH w:val="single" w:sz="4" w:space="0" w:color="808080"/><w:insideV w:val="single" w:sz="4" w:space="0" w:color="808080"/></w:tblBorders>';
+function table(rows,o){o=o||{};
+  var cols=Math.max.apply(null,rows.map(function(r){return r.length})),W=o.width||9638,cw=o.cols||Array(cols).fill(Math.floor(W/cols)),sz=o.sz||20;
+  var x='<w:tbl><w:tblPr><w:tblW w:w="'+W+'" w:type="dxa"/>'+BORDER+'<w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="40" w:type="dxa"/><w:left w:w="70" w:type="dxa"/><w:bottom w:w="40" w:type="dxa"/><w:right w:w="70" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>'+cw.map(function(w){return '<w:gridCol w:w="'+w+'"/>'}).join("")+'</w:tblGrid>';
+  rows.forEach(function(r,ri){
+    var rowBold=o.boldRows&&o.boldRows.indexOf(ri)>=0;
+    x+='<w:tr>'+(o.minH?'<w:trPr><w:trHeight w:val="'+o.minH+'" w:hRule="atLeast"/></w:trPr>':'');
+    for(var c=0;c<cols;c++){
+      var txt=r[c]==null?"":r[c],head=(o.header&&ri===0)||(o.labelCol&&c===0)||rowBold;
+      var right=o.rightCols&&o.rightCols.indexOf(c)>=0&&!(o.header&&ri===0);
+      x+='<w:tc><w:tcPr><w:tcW w:w="'+cw[c]+'" w:type="dxa"/>'+(head?'<w:shd w:val="clear" w:color="auto" w:fill="E7ECF5"/>':'')+'<w:vAlign w:val="center"/></w:tcPr>'+
+      para(runs(String(txt),{sz:sz,b:head}),{after:0,line:300,jc:right?"right":((o.header&&ri===0)||o.center?"center":undefined)})+'</w:tc>';
+    }
+    x+='</w:tr>';
+  });
+  return x+'</w:tbl>';
+}
+function bodyXml(text){
+  var lines=text.split("\n"),out="",i=0;
+  while(i<lines.length){
+    var l=lines[i];
+    if(/^\s*\|/.test(l)){
+      var rows=[];
+      while(i<lines.length&&/^\s*\|/.test(lines[i])){
+        var cells=lines[i].trim().replace(/^\|/,"").replace(/\|$/,"").split("|").map(function(c){return c.trim()});
+        if(!cells.every(function(c){return /^:?-{2,}:?$/.test(c)}))rows.push(cells);
+        i++;
+      }
+      if(rows.length)out+=table(rows,{header:true})+para("",{after:80,line:240});
+      continue;
+    }
+    if(!l.trim()){i++;continue}
+    var t=l.trim();
+    if(t.indexOf("■ ")===0)out+=para(runs(t.slice(2),{b:true}),{before:120,after:40,keep:true});
+    else if(/^[-•·]\s+/.test(t))out+=para(run("· ")+runs(t.replace(/^[-•·]\s+/,"")),{left:300,hang:200});
+    else out+=para(runs(t),{});
+    i++;
+  }
+  return out;
+}
+function fundXml(){
+  var ord=eRowsOrdered();if(!ord.length)return "";
+  var t=eTotals(),b=num($("#e-budget").value),n=state.e.filter(function(r){return num(r.amt)>0}).length;
+  var x=para(run("붙임1  창업활동자금 집행 상세내역",{b:true,sz:26}),{shd:"D9E2F3",after:100,line:340});
+  x+=table([["배정금액",won(b),"집행총액",won(t.total),"집행잔액",won(b-t.total)]],{labelCol:false,cols:[1400,1900,1400,1900,1400,1638],boldRows:[],sz:18});
+  x+=para("",{after:60,line:200});
+  var rows=[["집행비목","순번","집행일자","거래처명","세부 품목·내용","산출근거","금액(원)","건별증빙","비고"]],bold=[];
+  ord.forEach(function(o){
+    if(o.sub){bold.push(rows.length);rows.push([o.cat+" 소계","","","","","",o.amt.toLocaleString("ko-KR"),"",o.hasHold?"잔액보전 제외":"-"])}
+    else rows.push([o.cat,String(o.no),o.r.date,o.r.vendor,o.r.item,o.r.basis,num(o.r.amt).toLocaleString("ko-KR"),o.r.proof||"-",o.r.note||"-"]);
+  });
+  bold.push(rows.length);rows.push(["총 합계("+n+"건)","","","","","",t.total.toLocaleString("ko-KR"),"","잔액보전 제외"]);
+  x+=table(rows,{header:true,boldRows:bold,sz:16,cols:[1000,500,700,1300,1700,1500,1000,700,1238],rightCols:[6]});
+  return '<w:p><w:r><w:br w:type="page"/></w:r></w:p>'+x;
+}
+function buildDocx(){
+  var b="";
+  b+=para("",{after:1800,line:240});
+  b+=para(run("2026년 모두의 창업 프로젝트",{sz:32,b:true}),{jc:"center",after:200});
+  b+=para(run("1R 활동보고서",{sz:56,b:true}),{jc:"center",after:1800});
+  b+=para(run($("#f-date").value,{sz:26,b:true}),{jc:"center",after:600});
+  b+=table([["멘토기관",$("#f-mentor").value.trim()],["이름",$("#f-name").value.trim()],["닉네임",$("#f-nick").value.trim()]],{labelCol:true,cols:[2400,4400],width:6800,minH:520});
+  b+='<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+  activeIds().forEach(function(i,k){
+    var q=QS[i-1];
+    b+=para(run(q.title,{b:true,sz:24})+run("   "+q.tag,{sz:20,color:"555555"}),{shd:"D9E2F3",keep:true,before:k?240:0,after:100,line:340});
+    b+=bodyXml(state.out[i]||"");
+  });
+  if($("#use-fund").checked)b+=fundXml();
+  var sect='<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr>';
+  var doc='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+b+sect+'</w:body></w:document>';
+  var styles='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr>'+FONT+'<w:sz w:val="24"/><w:szCs w:val="24"/><w:lang w:val="ko-KR" w:eastAsia="ko-KR"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="384" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style></w:styles>';
+  var ct='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>';
+  var rels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>';
+  var drels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>';
+  var z=new window.JSZip();
+  z.file("[Content_Types].xml",ct);z.file("_rels/.rels",rels);z.file("word/document.xml",doc);z.file("word/styles.xml",styles);z.file("word/_rels/document.xml.rels",drels);
+  return z.generateAsync({type:"arraybuffer",compression:"DEFLATE"});
+}
+$("#docx").onclick=async function(){
+  if(!window.JSZip){toast("Word 파일 생성 도구를 불러오지 못했습니다. 전체 복사를 이용해주세요");return}
+  var dl=null;try{dl=await window.claude.use("downloads")}catch(e){}
+  if(!dl){toast("이 보기에서는 파일 저장이 막혀 있습니다. 전체 복사를 이용해주세요");return}
+  try{
+    var buf=await buildDocx();
+    await dl.save({filename:($("#f-name").value.trim()||"작성자")+"_활동보고서.docx",data:buf});toast("저장했습니다");
+  }catch(e){if(!e||e.code!=="declined")toast("저장하지 못했습니다. 전체 복사를 이용해주세요")}
+};
+
+mRender();eRender();refCount();refresh();initLocal();cloudInit(localSaved);
+})();
+</script>
