@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>키오스크 주문시간 측정</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: one narrow column for one-handed phone use: visit info, live stats strip, big tap rows, then the result table */
+:root{
+  --bg:#eef2f0; --surface:#ffffff; --line:#d3dbd7; --fg:#13201b; --muted:#56665f;
+  --accent:#0f6b5c; --accent-soft:#d9eee8;
+  --go:#14804a; --go-fg:#ffffff; --stop:#c0392b; --stop-fg:#ffffff;
+  --group:#6d45c4; --group-soft:#ebe3fa;
+  --run:#fff3d1; --run-line:#d9a100; --done:#f6f8f7;
+  --font:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1513; --surface:#18201d; --line:#2c3833; --fg:#e7eeea; --muted:#94a59d;
+  --accent:#4cc3aa; --accent-soft:#173a32;
+  --go:#1f9b5b; --go-fg:#ffffff; --stop:#d9534a; --stop-fg:#ffffff;
+  --group:#a888f0; --group-soft:#2c2347;
+  --run:#3a3115; --run-line:#e3b62f; --done:#141b18; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1513; --surface:#18201d; --line:#2c3833; --fg:#e7eeea; --muted:#94a59d;
+  --accent:#4cc3aa; --accent-soft:#173a32;
+  --go:#1f9b5b; --go-fg:#ffffff; --stop:#d9534a; --stop-fg:#ffffff;
+  --group:#a888f0; --group-soft:#2c2347;
+  --run:#3a3115; --run-line:#e3b62f; --done:#141b18; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 120px}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1{font-size:19px;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h2{font-size:13px;margin:0;color:var(--muted);font-weight:500;letter-spacing:.04em}
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.badge{font-size:12px;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:2px 10px;font-weight:500}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+.visit{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.visit label{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--muted);min-width:0}
+.visit .full{grid-column:1/-1}
+input,textarea{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* stats strip */
+.stats{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--bg);padding-block:6px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px 8px;min-width:0}
+.stat .k{font-size:11px;color:var(--muted);display:flex;justify-content:space-between;gap:4px}
+.stat .v{font-family:var(--mono);font-size:17px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.stat .s{font-size:11px;color:var(--muted);font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat.grp .v{color:var(--group)}
+
+/* tap rows */
+.rows{display:flex;flex-direction:column;gap:8px}
+.row{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px;display:grid;
+  grid-template-columns:40px 60px 1fr 1fr 36px;gap:6px;align-items:center}
+.row.running{background:var(--run);border-color:var(--run-line)}
+.row.done{background:var(--done)}
+.row .no{font-family:var(--mono);font-weight:600;font-size:20px;text-align:center}
+.row .meta{grid-column:1/-1;display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--muted);padding:0 4px;flex-wrap:wrap}
+.row .meta b{color:var(--fg);font-family:var(--mono);font-size:15px}
+.row.running .meta b{color:var(--fg)}
+.row .memo{grid-column:1/-1;font-size:12px;color:var(--muted);padding:0 4px}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.b-start,.b-stop{height:56px;font-size:17px;font-weight:700}
+.b-start{background:var(--go);color:var(--go-fg)}
+.b-stop{background:var(--stop);color:var(--stop-fg)}
+.b-start.used,.b-stop.used{background:transparent;border:1.5px solid var(--line);color:var(--muted);font-weight:500;font-size:14px}
+.b-start.arm,.b-stop.arm{background:var(--run-line);color:#1d1600;border:0;font-size:13px}
+button:disabled{opacity:.35;cursor:default}
+.b-grp{height:56px;background:transparent;border:1.5px dashed var(--line);color:var(--muted);font-size:14px;font-weight:500}
+.b-grp[aria-pressed="true"]{background:var(--group-soft);border:1.5px solid var(--group);color:var(--group);font-weight:700}
+.b-more{height:56px;background:transparent;color:var(--muted);font-size:20px}
+.tag{font-size:11px;border-radius:6px;padding:1px 6px;font-weight:600}
+.tag.solo{background:var(--accent-soft);color:var(--accent)}
+.tag.group{background:var(--group-soft);color:var(--group)}
+
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{background:var(--surface);border:1px solid var(--line);color:var(--fg);padding:10px 14px;font-size:14px;font-weight:500}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.btn.danger{color:var(--stop)}
+.btn.danger.arm{background:var(--stop);color:var(--stop-fg);border-color:var(--stop)}
+.btn.arm{background:var(--run-line);color:#1d1600;border-color:var(--run-line)}
+.btn.sm{padding:4px 10px;font-size:12px}
+tr.tot td{background:var(--bg)}
+#nextStore{min-height:52px;font-size:15px}
+.waitline{grid-column:1/-1;display:flex;gap:4px;align-items:center;padding:0 2px}
+.waitline span{font-size:12px;color:var(--muted);margin-right:2px}
+.wchip{flex:1;min-width:30px;height:38px;padding:0 4px;background:var(--bg);border:1px solid var(--line);color:var(--fg);font-family:var(--mono);font-size:15px}
+.wchip.on{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:700}
+.wtoggle{height:32px;padding:0 10px;background:transparent;border:1px dashed var(--line);color:var(--muted);font-size:13px}
+.wtoggle.has{border-style:solid;border-color:var(--accent);color:var(--accent);font-weight:600}
+.add{width:100%;height:48px;background:transparent;border:1.5px dashed var(--accent);color:var(--accent);font-weight:600}
+
+/* result table */
+.tablebox{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:440px;font-size:13px}
+th,td{padding:7px 8px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:11px;color:var(--muted);font-weight:500;background:var(--bg);letter-spacing:.03em}
+td.t{font-family:var(--mono);font-variant-numeric:tabular-nums}
+td.memo-c{white-space:normal;min-width:90px;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+.head-lines{font-size:13px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
+.head-lines b{color:var(--fg);font-weight:500}
+.summary{font-size:13px;display:grid;grid-template-columns:auto 1fr;gap:2px 12px}
+.summary dt{color:var(--muted)} .summary dd{margin:0;font-family:var(--mono)}
+textarea{font-family:var(--mono);font-size:12px;height:160px}
+.note{font-size:12px;color:var(--muted)}
+.warn{background:var(--run);border:1px solid var(--run-line);border-radius:10px;padding:8px 10px;font-size:13px}
+
+/* editor sheet */
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);
+  border-radius:16px 16px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.18);
+  padding:16px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.sheet .in{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+.sheet .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sheet label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:2px;min-width:0}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:19}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:30;
+  background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:999px;font-size:13px;max-width:90vw}
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--bg);border-top:1px solid var(--line);
+  padding:8px max(16px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.bar .in{max-width:560px;margin:0 auto;display:flex;gap:8px;align-items:center;justify-content:space-between;font-size:12px;color:var(--muted)}
+@media (prefers-reduced-motion: no-preference){.row{transition:background .15s}}
+
+/* tabs + mock kiosk */
+:root{--k-bezel:#222826;--k-screen:#fbfaf7;--k-ink:#1c1c1a;--k-sub:#6d6a63;--k-line:#e2ded5;--k-chip:#f0ece4;--k-brand:#a8502c;--k-brand-fg:#ffffff;--k-ls:#0f6b5c;--k-ls-soft:#dcefe9;--k-sel:#1c1c1a;--k-sel-fg:#ffffff;--k-err:#c0392b}
+.col{display:flex;flex-direction:column;gap:14px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px}
+.tabs button{height:42px;background:transparent;color:var(--muted);font-weight:500}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--surface);font-weight:700}
+.setup{display:flex;flex-direction:column;gap:10px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.seg.sm{grid-template-columns:1fr 1fr}
+.seg button{min-height:44px;background:var(--bg);border:1px solid var(--line);color:var(--fg);font-size:14px;padding:4px 6px}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:700}
+.opts{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center}
+#optFull{display:flex;flex-wrap:wrap;gap:6px 14px}
+.ol{font-size:12px;color:var(--muted)}
+.chk{display:flex;gap:6px;align-items:center;font-size:14px}
+.chk input{width:18px;height:18px}
+.mission{background:var(--accent-soft);border:1px solid var(--accent);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:4px}
+.mission .m-k{font-size:12px;color:var(--accent);font-weight:600;letter-spacing:.03em}
+.mission .m-v{font-size:19px;font-weight:700;text-wrap:balance}
+.mission .m-sub{font-size:14px}
+.mission .m-hint{font-size:12px;color:var(--muted)}
+.kiosk{background:var(--k-bezel);border-radius:18px;padding:10px}
+.k-screen{background:var(--k-screen);color:var(--k-ink);border-radius:10px;min-height:440px;display:flex;flex-direction:column;overflow:hidden}
+.k-head{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--k-line);font-size:13px;font-weight:700}
+.k-head.ls{background:var(--k-ls);color:var(--k-brand-fg);border-color:var(--k-ls)}
+.k-head span{font-weight:400;font-size:12px;opacity:.8}
+.k-body{flex:1;padding:14px;display:flex;flex-direction:column;gap:12px}
+.k-title{font-size:20px;font-weight:700;text-wrap:balance}
+.k-sub{font-size:13px;color:var(--k-sub)}
+.k-screen button{color:var(--k-ink);background:var(--k-chip);border:1px solid var(--k-line);border-radius:10px;font-size:15px}
+.k-screen .k-big{min-height:150px;font-size:19px;font-weight:700}
+.k-screen .k-main{background:var(--k-brand);color:var(--k-brand-fg);border-color:var(--k-brand);min-height:56px;font-weight:700;font-size:17px}
+.k-screen .k-ls{background:var(--k-ls);color:var(--k-brand-fg);border-color:var(--k-ls)}
+.k-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.k-tabs{display:flex;gap:6px}
+.k-tabs button{flex:1;min-height:40px;font-size:14px}
+.k-tabs button.on,.k-opt button.on{background:var(--k-sel);color:var(--k-sel-fg);border-color:var(--k-sel)}
+.k-items{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.k-items button{min-height:74px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px}
+.k-items small{color:var(--k-sub);font-size:12px}
+.k-opt{display:grid;grid-template-columns:64px 1fr 1fr;gap:6px;align-items:center}
+.k-opt span{font-size:13px;color:var(--k-sub)}
+.k-opt button{min-height:46px}
+.k-foot{display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-top:auto}
+.k-foot button{min-height:56px}
+.k-cart{display:flex;flex-direction:column;gap:6px;font-size:14px}
+.k-cart div{display:flex;justify-content:space-between;align-items:center;gap:8px;border-bottom:1px solid var(--k-line);padding-bottom:6px}
+.k-cart button{min-height:34px;padding:0 10px;font-size:13px}
+.k-total{display:flex;justify-content:space-between;font-weight:700}
+.k-goal{font-size:12px;background:var(--k-chip);border:1px solid var(--k-line);border-radius:6px;padding:4px 8px;color:var(--k-sub)}
+.k-phone{white-space:nowrap;font-family:var(--mono);font-size:clamp(18px,6vw,26px);text-align:center;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.k-keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.k-keys button{min-height:54px;font-size:22px;font-family:var(--mono)}
+.k-msg{color:var(--k-err);font-size:14px;min-height:20px;text-align:center}
+.k-fav{display:flex;flex-direction:column;gap:10px}
+.k-fav button{min-height:84px;text-align:left;padding:10px 14px;display:flex;flex-direction:column;gap:2px;background:var(--k-ls-soft);border:1.5px solid var(--k-ls)}
+.k-fav button b{font-size:17px}
+.k-fav button small{color:var(--k-ls);font-weight:700}
+.k-fav.one button{min-height:150px;justify-content:center}
+.k-center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center}
+.k-res{font-family:var(--mono);font-size:15px;display:grid;grid-template-columns:auto auto;gap:4px 14px;text-align:left}
+.k-res .bad{color:var(--k-err)}
+.k-start{flex:1;width:100%;font-size:20px;font-weight:700}
+.m-timer{display:flex;align-items:center;gap:10px}
+.m-timer span{font-size:13px;color:var(--muted)}
+.m-timer b{font-size:22px;flex:1}
+.cmp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.cmp{border:1px solid var(--line);border-radius:10px;padding:8px;min-width:0;background:var(--bg)}
+.cmp .h{font-size:12px;color:var(--muted)}
+.cmp .v{font-family:var(--mono);font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+.cmp .s{font-size:11px;color:var(--muted);line-height:1.4}
+.ratio{margin:0;font-size:14px}
+.ratio:empty{display:none}
+.ok{color:var(--go);font-weight:700}.ng{color:var(--stop);font-weight:700}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <h1>키오스크 주문시간 측정</h1>
+    <span class="badge">리틀스타 현장조사</span>
+  </div>
+
+  <div id="storeWarn" class="warn" hidden>이 화면에서는 자동 저장이 되지 않아요. 측정이 끝나면 바로 <b>표 복사</b>로 결과를 옮겨 두세요.</div>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="field" aria-selected="true">현장 측정</button>
+    <button role="tab" data-tab="mock" aria-selected="false">모의 주문 비교</button>
+  </nav>
+
+  <div id="tabField" class="col">
+  <section class="card visit" aria-label="방문 정보">
+    <label>방문 일자<input id="vDate" type="date"></label>
+    <label>방문 시간<input id="vTime" type="time"></label>
+    <label class="full">매장명<input id="vStore" type="text" placeholder="예: ○○카페 강남역점" autocomplete="off"></label>
+  </section>
+
+  <section class="stats" aria-label="요약">
+    <div class="stat"><div class="k"><span>전체</span><span id="sAllN">0명</span></div><div class="v" id="sAllAvg">-</div><div class="s" id="sAllRange">최소~최대</div></div>
+    <div class="stat"><div class="k"><span>단독</span><span id="sSoloN">0명</span></div><div class="v" id="sSoloAvg">-</div><div class="s" id="sSoloRange">최소~최대</div></div>
+    <div class="stat grp"><div class="k"><span>단체</span><span id="sGrpN">0팀</span></div><div class="v" id="sGrpAvg">-</div><div class="s" id="sGrpRange">최소~최대</div></div>
+  </section>
+
+  <section class="rows" id="rows" aria-label="손님별 측정"></section>
+  <button class="add" id="addRow">+ 손님 추가</button>
+  <p class="note">시작: 손님이 키오스크 화면을 처음 터치한 순간 · 종료: 결제 완료 화면이 뜬 순간. 2인 이상이 함께 주문하면 <b>단체</b>를 눌러 주세요(언제 눌러도 됩니다). <b>대기자 수</b>는 선택 사항이에요. 필요한 손님만 '+ 대기자 수'를 눌러 종료 순간 뒤에 줄 선 사람 수를 고르고, 6명을 넘으면 6+를 계속 누르면 1명씩 늘어요. 추정 대기 = 대기자 수 × 이 매장 평균 주문시간, 전체 소요(추정) = 추정 대기 + 주문시간.</p>
+
+  <section class="card" style="display:flex;flex-direction:column;gap:10px" aria-label="결과표">
+    <h2>결과표</h2>
+    <div class="head-lines" id="headLines"></div>
+    <div class="tablebox"><table>
+      <thead><tr><th>삭제</th><th>번호</th><th>구분</th><th>주문시작</th><th>주문종료</th><th>소요시간</th><th>대기자</th><th>추정 대기</th><th>전체 소요(추정)</th><th>메모</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table></div>
+    <dl class="summary" id="summary"></dl>
+    <h2>시간대별 (주문 시작 시각 기준, 대기자 입력한 손님만 대기 통계에 포함)</h2>
+    <div class="tablebox"><table>
+      <thead><tr><th>시간대</th><th>손님</th><th>평균 주문</th><th>대기 입력</th><th>평균 대기자</th><th>추정 대기</th><th>전체 소요(추정)</th></tr></thead>
+      <tbody id="hourBody"></tbody>
+    </table></div>
+    <div class="actions">
+      <button class="btn primary" id="copyTsv">엑셀용 표 복사</button>
+      <button class="btn" id="copySum">카톡용 요약 복사</button>
+      <button class="btn" id="toggleCsv">CSV 보기</button>
+    </div>
+    <textarea id="csvBox" readonly hidden aria-label="CSV 텍스트"></textarea>
+    <p class="note">엑셀용 표 복사 후 엑셀이나 구글 시트 첫 칸에 붙여넣으면 칸이 그대로 나뉩니다.</p>
+  </section>
+
+  <button class="btn primary" id="nextStore">이 매장 저장하고 다음 매장 측정</button>
+
+  <section class="card col" aria-label="매장별 비교">
+    <h2>매장별 비교 (저장한 매장 + 지금 측정 중)</h2>
+    <div class="tablebox"><table>
+      <thead><tr><th>삭제</th><th>매장</th><th>방문</th><th>건수</th><th>전체 평균</th><th>단독</th><th>단체</th><th>최소~최대</th><th>평균 대기자</th><th>전체 소요(추정)</th></tr></thead>
+      <tbody id="storeBody"></tbody>
+    </table></div>
+    <div class="actions"><button class="btn primary" id="copyAll">모든 매장 표 복사</button></div>
+    <p class="note">모든 매장의 손님별 기록이 매장명 열과 함께 한 표로 복사돼요. 엑셀에서 매장별로 거르거나 피벗으로 분석할 수 있고, 아래에 매장별 요약도 붙습니다.</p>
+  </section>
+
+  <div class="actions">
+    <button class="btn" id="undo">되돌리기</button>
+    <button class="btn danger" id="reset">지금 매장 기록 지우기</button>
+  </div>
+  </div>
+
+  <div id="tabMock" class="col" hidden>
+    <section class="card setup" aria-label="모의 주문 설정">
+      <h2>방식 고르기</h2>
+      <div class="seg" id="segMode">
+        <button data-v="full">① 기존 전체 단계</button>
+        <button data-v="fav1">② 단골 1개</button>
+        <button data-v="fav3">③ 단골 3개</button>
+      </div>
+      <div class="opts" id="optFull">
+        <label class="chk"><input type="checkbox" id="mAccrue"> 포인트 적립 번호 입력 포함</label>
+        <span class="note">기존 방식은 카드 결제로 고정</span>
+      </div>
+      <div class="opts" id="optLs">
+        <span class="ol">식별</span>
+        <div class="seg sm" id="segIdent"><button data-v="qr">QR</button><button data-v="phone">전화번호 8자리</button></div>
+        <span class="ol">결제</span>
+        <div class="seg sm" id="segPay"><button data-v="card">카드</button><button data-v="auto">자동충전</button></div>
+      </div>
+      <p class="note">모의 고정값: 카드 승인 3초, QR 인식 1초, 자동충전 차감 0.8초</p>
+    </section>
+
+    <section class="mission" id="mission" aria-live="polite"></section>
+
+    <div class="kiosk"><div class="k-screen" id="kiosk"></div></div>
+    <div class="m-timer"><span>경과</span><b class="num" id="mElapsed">0.0초</b><button class="btn" id="mNext">새로 시작</button></div>
+
+    <section class="card col" aria-label="모의 주문 결과">
+      <h2>방식별 비교 (정확히 주문한 기록만)</h2>
+      <div class="cmp-grid" id="cmp"></div>
+      <p class="ratio" id="ratio"></p>
+      <div class="tablebox"><table>
+        <thead><tr><th>회차</th><th>방식</th><th>식별·결제</th><th>주문확정</th><th>결제 포함</th><th>터치</th><th>정확</th></tr></thead>
+        <tbody id="mBody"></tbody>
+      </table></div>
+      <div class="actions">
+        <button class="btn primary" id="mCopy">엑셀용 표 복사</button>
+        <button class="btn" id="mUndo">마지막 기록 삭제</button>
+        <button class="btn danger" id="mReset">모의 기록 초기화</button>
+      </div>
+      <p class="note">주문확정: 첫 터치부터 결제 직전까지(결제수단 선택 또는 '이대로 주문'). 결제 포함: 결제 완료 화면까지.</p>
+    </section>
+  </div>
+</div>
+
+<div class="bar"><div class="in"><span id="saveState">자동 저장됨</span><span id="wakeState"></span></div></div>
+
+<div class="scrim" id="scrim" hidden></div>
+<div class="sheet" id="sheet" hidden role="dialog" aria-label="기록 수정">
+  <div class="in">
+    <div class="top"><h1 id="edTitle" style="font-size:17px">1번 손님 수정</h1><button class="btn" id="edClose">닫기</button></div>
+    <div class="two">
+      <label>주문시작 (시:분:초)<input id="edStart" class="num" inputmode="decimal" placeholder="12:06:03"></label>
+      <label>주문종료 (시:분:초)<input id="edEnd" class="num" inputmode="decimal" placeholder="12:06:44"></label>
+    </div>
+    <label>메모<input id="edMemo" placeholder="예: 메뉴 고민, 쿠폰 사용, 3명" autocomplete="off"></label>
+    <div class="actions">
+      <button class="btn primary" id="edSave">저장</button>
+      <button class="btn" id="edGroup">단체로 표시</button>
+      <button class="btn" id="edClear">시간 지우기</button>
+      <button class="btn danger" id="edDelete">손님 삭제</button>
+    </div>
+    <p class="note" id="edErr"></p>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+const KEY='littlestar-ordertime-v1';
+const $=id=>document.getElementById(id);
+const pad=(n,w=2)=>String(n).padStart(w,'0');
+const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const hm=d=>`${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const hms=ms=>{const d=new Date(ms);return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`};
+const hmsd=ms=>{const d=new Date(ms);return `${hms(ms)}.${Math.floor(d.getMilliseconds()/100)}`};
+const secs=ms=>(ms/1000).toFixed(1);
+function fmtDur(ms){if(ms==null)return '-';const s=ms/1000;if(s<60)return `${s.toFixed(1)}초`;const m=Math.floor(s/60);return `${m}분 ${(s-m*60).toFixed(1)}초`}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function mkRow(n){return {n,start:null,end:null,group:false,memo:'',wait:null}}
+function fresh(){const d=new Date();return {date:ymd(d),time:hm(d),store:'',rows:[1,2,3,4,5].map(mkRow),archive:[]}}
+
+let storageOk=true;
+function load(){try{const t=localStorage.getItem(KEY);return t?JSON.parse(t):null}catch(e){storageOk=false;return null}}
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(S));$('saveState').textContent='자동 저장됨 '+hms(Date.now())}
+  catch(e){storageOk=false;$('storeWarn').hidden=false;$('saveState').textContent='저장 안 됨: 표 복사로 옮겨 두세요'}
+}
+let S=load()||fresh();
+if(!S.rows||!Array.isArray(S.rows))S=fresh();
+if(!Array.isArray(S.archive))S.archive=[];
+try{localStorage.setItem(KEY+'-probe','1');localStorage.removeItem(KEY+'-probe')}catch(e){storageOk=false}
+$('storeWarn').hidden=storageOk;
+
+const undoStack=[];let rowDel=null,waitOpen=null;
+function snap(){undoStack.push(JSON.stringify(S));if(undoStack.length>30)undoStack.shift()}
+function commit(){save();render()}
+function buzz(){try{navigator.vibrate&&navigator.vibrate(25)}catch(e){}}
+let toastT;function toast(m){const t=$('toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,1800)}
+
+/* wake lock */
+let wake=null;
+async function keepAwake(){
+  if(wake||!('wakeLock' in navigator))return;
+  try{wake=await navigator.wakeLock.request('screen');$('wakeState').textContent='화면 켜짐 유지 중';
+    wake.addEventListener('release',()=>{wake=null;$('wakeState').textContent=''})}catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&S.rows.some(r=>r.start&&!r.end))keepAwake()});
+
+/* visit info */
+$('vDate').value=S.date;$('vTime').value=S.time;$('vStore').value=S.store;
+['vDate','vTime','vStore'].forEach(id=>$(id).addEventListener('input',e=>{
+  const k={vDate:'date',vTime:'time',vStore:'store'}[id];S[k]=e.target.value;save();renderTable();renderStores()}));
+
+/* stats */
+function done(r){return r.start!=null&&r.end!=null&&r.end>r.start}
+function stat(list){
+  const d=list.filter(done).map(r=>r.end-r.start).sort((a,b)=>a-b);
+  if(!d.length)return {n:0};
+  const sum=d.reduce((a,b)=>a+b,0);const mid=Math.floor(d.length/2);
+  return {n:d.length,avg:sum/d.length,med:d.length%2?d[mid]:(d[mid-1]+d[mid])/2,min:d[0],max:d[d.length-1]};
+}
+function waitInfo(rows){const st=stat(rows);const w=rows.filter(r=>r.wait!=null);
+  return {avgOrder:st.n?st.avg:null,n:w.length,avgWait:w.length?w.reduce((a,r)=>a+r.wait,0)/w.length:null,maxWait:w.length?Math.max(...w.map(r=>r.wait)):null,
+  avgTotal:(()=>{const t=rows.map(r=>estTotal(r,st.n?st.avg:null)).filter(v=>v!=null);return t.length?t.reduce((a,b)=>a+b,0)/t.length:null})()}}
+function estWait(r,avgOrder){return r.wait!=null&&avgOrder!=null?r.wait*avgOrder:null}
+function estTotal(r,avgOrder){const w=estWait(r,avgOrder);return w!=null&&done(r)?w+(r.end-r.start):null}
+function hourly(rows){
+  const all=stat(rows),avg=all.n?all.avg:null,g={};
+  rows.filter(r=>r.start!=null).forEach(r=>{const h=new Date(r.start).getHours();(g[h]=g[h]||[]).push(r)});
+  const m=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+  return Object.keys(g).map(Number).sort((a,b)=>a-b).map(h=>{const rs=g[h],st=stat(rs),w=rs.filter(r=>r.wait!=null);
+    return {label:`${pad(h)}~${pad((h+1)%24)}시`,n:rs.length,avgOrder:st.n?st.avg:null,wn:w.length,avgWait:m(w.map(r=>r.wait)),
+      estWait:m(w.map(r=>estWait(r,avg)).filter(v=>v!=null)),estTotal:m(rs.map(r=>estTotal(r,avg)).filter(v=>v!=null))}});
+}
+function stats(){return {all:stat(S.rows),solo:stat(S.rows.filter(r=>!r.group)),grp:stat(S.rows.filter(r=>r.group))}}
+
+/* overwrite arming */
+let armed=null,armT;
+function arm(n,kind){armed={n,kind};clearTimeout(armT);armT=setTimeout(()=>{armed=null;renderRows()},3000);renderRows()}
+const isArmed=(n,k)=>armed&&armed.n===n&&armed.kind===k;
+
+function press(n,kind){
+  const r=S.rows.find(x=>x.n===n);if(!r)return;
+  const now=Date.now();
+  if(kind==='start'){
+    if(r.start!=null&&!isArmed(n,'start')){arm(n,'start');return}
+    snap();r.start=now;r.end=null;armed=null;
+    if(S.rows[S.rows.length-1]===r)S.rows.push(mkRow(r.n+1));
+    keepAwake();
+  }else{
+    if(r.start==null)return;
+    if(r.end!=null&&!isArmed(n,'stop')){arm(n,'stop');return}
+    snap();r.end=now;armed=null;
+    toast(`${n}번 ${r.group?'단체':'단독'} · ${fmtDur(r.end-r.start)}`);
+  }
+  buzz();commit();
+}
+
+function renderRows(){
+  const box=$('rows');
+  box.innerHTML=S.rows.map(r=>{
+    const run=r.start!=null&&r.end==null, fin=done(r);
+    const sLabel=isArmed(r.n,'start')?'다시 누르면 덮어씀':(r.start!=null?'다시 시작':'시작');
+    const eLabel=isArmed(r.n,'stop')?'다시 누르면 덮어씀':(r.end!=null?'다시 종료':'종료');
+    const meta=r.start==null?'<span>대기</span>':
+      `<span class="num">${hms(r.start)} → ${r.end!=null?hms(r.end):'진행 중'}</span><b data-live="${run?r.start:''}">${fin?fmtDur(r.end-r.start):(run?fmtDur(Date.now()-r.start):'-')}</b>`;
+    return `<div class="row ${run?'running':''} ${fin?'done':''}" data-n="${r.n}">
+      <div class="no">${r.n}</div>
+      <button class="b-grp" data-act="grp" aria-pressed="${r.group}">${r.group?'단체 ✓':'단체'}</button>
+      <button class="b-start ${r.start!=null?'used':''} ${isArmed(r.n,'start')?'arm':''}" data-act="start">${sLabel}</button>
+      <button class="b-stop ${r.end!=null?'used':''} ${isArmed(r.n,'stop')?'arm':''}" data-act="stop" ${r.start==null?'disabled':''}>${eLabel}</button>
+      <button class="b-more" data-act="more" aria-label="${r.n}번 수정">⋯</button>
+      <div class="meta">${meta}</div>
+      ${r.start==null?'':(waitOpen===r.n?`<div class="waitline"><span>대기자</span>${[0,1,2,3,4,5].map(v=>`<button class="wchip ${r.wait===v?'on':''}" data-act="wait" data-v="${v}">${v}</button>`).join('')}<button class="wchip ${r.wait>=6?'on':''}" data-act="wait" data-v="${r.wait>=6?r.wait+1:6}">${r.wait>=6?r.wait+'+1':'6+'}</button><button class="wchip" data-act="wclose" aria-label="닫기">✕</button></div>`
+        :`<div class="waitline"><button class="wtoggle ${r.wait!=null?'has':''}" data-act="wopen">${r.wait!=null?`대기자 ${r.wait}명 · 고치기`:'+ 대기자 수 (선택)'}</button></div>`)}
+      ${r.memo?`<div class="memo">메모: ${esc(r.memo)}</div>`:''}
+    </div>`}).join('');
+}
+$('rows').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  const n=+b.closest('.row').dataset.n;const act=b.dataset.act;
+  if(act==='start'||act==='stop')press(n,act);
+  else if(act==='grp'){const r=S.rows.find(x=>x.n===n);snap();r.group=!r.group;buzz();commit()}
+  else if(act==='wait'){const r=S.rows.find(x=>x.n===n);const v=+b.dataset.v;snap();r.wait=(r.wait===v&&v<6)?null:v;if(v<6)waitOpen=null;buzz();commit()}
+  else if(act==='wopen'){waitOpen=n;renderRows()}
+  else if(act==='wclose'){waitOpen=null;renderRows()}
+  else if(act==='more')openEd(n);
+});
+
+function renderStats(){
+  const st=stats();
+  const put=(p,s,unit)=>{$(p+'N').textContent=`${s.n||0}${unit}`;$(p+'Avg').textContent=s.n?fmtDur(s.avg):'-';
+    $(p+'Range').textContent=s.n?`${secs(s.min)}~${secs(s.max)}초`:'최소~최대'};
+  put('sAll',st.all,'명');put('sSolo',st.solo,'명');put('sGrp',st.grp,'팀');
+  return st;
+}
+function renderTable(){
+  $('headLines').innerHTML=`<span>일자 <b>${esc(S.date||'-')}</b></span><span>방문 <b>${esc(S.time||'-')}</b></span><span>매장 <b>${esc(S.store||'(미입력)')}</b></span><span>방식 <b>키오스크</b></span>`;
+  const used=S.rows.filter(r=>r.start!=null);const WI=waitInfo(S.rows);
+  $('tbody').innerHTML=used.length?used.map(r=>`<tr>
+    <td><button class="btn sm ${rowDel===r.n?'arm danger':''}" data-rdel="${r.n}" aria-label="${r.n}번 손님 삭제">${rowDel===r.n?'삭제?':'✕'}</button></td><td class="t">${r.n}</td><td><span class="tag ${r.group?'group':'solo'}">${r.group?'단체':'단독'}</span></td>
+    <td class="t">${hms(r.start)}</td><td class="t">${r.end!=null?hms(r.end):'-'}</td>
+    <td class="t">${done(r)?fmtDur(r.end-r.start):'진행 중'}</td><td class="t">${r.wait!=null?r.wait+'명':'-'}</td><td class="t">${estWait(r,WI.avgOrder)!=null?'≈'+fmtDur(estWait(r,WI.avgOrder)):'-'}</td><td class="t"><b>${estTotal(r,WI.avgOrder)!=null?'≈'+fmtDur(estTotal(r,WI.avgOrder)):'-'}</b></td><td class="memo-c">${esc(r.memo||'')}</td></tr>`).join('')
+    :`<tr><td colspan="10" style="color:var(--muted);white-space:normal">아직 기록이 없어요. 위에서 1번 손님의 시작을 누르면 여기에 쌓입니다.</td></tr>`;
+  const st=stats();
+  const line=(k,s)=>s.n?`<dt>${k}</dt><dd>${s.n}건 · 평균 ${secs(s.avg)}초 · 중앙값 ${secs(s.med)}초 · 최소 ${secs(s.min)}초 · 최대 ${secs(s.max)}초</dd>`:`<dt>${k}</dt><dd>-</dd>`;
+  $('summary').innerHTML=line('전체',st.all)+line('단독',st.solo)+line('단체',st.grp)+(WI.n?`<dt>혼잡도</dt><dd>대기자 평균 ${WI.avgWait.toFixed(1)}명 · 최대 ${WI.maxWait}명${WI.avgOrder!=null?` · 추정 대기 평균 ${secs(WI.avgWait*WI.avgOrder)}초`:''}${WI.avgTotal!=null?` · <b>전체 소요 평균 ≈${secs(WI.avgTotal)}초</b>`:''}</dd>`:'<dt>혼잡도</dt><dd>-</dd>');
+  const H=hourly(S.rows),o=v=>v!=null?secs(v)+'초':'-';
+  $('hourBody').innerHTML=H.length?H.map(h=>`<tr><td>${h.label}</td><td class="t">${h.n}</td><td class="t">${o(h.avgOrder)}</td><td class="t">${h.wn}</td><td class="t">${h.avgWait!=null?h.avgWait.toFixed(1)+'명':'-'}</td><td class="t">${h.estWait!=null?'≈'+o(h.estWait):'-'}</td><td class="t"><b>${h.estTotal!=null?'≈'+o(h.estTotal):'-'}</b></td></tr>`).join('')
+    :'<tr><td colspan="7" style="color:var(--muted)">기록이 쌓이면 1시간 단위로 묶여 나와요.</td></tr>';
+  if(!$('csvBox').hidden)$('csvBox').value=toCSV();
+}
+function render(){renderRows();renderStats();renderTable();renderStores()}
+
+/* live timer */
+setInterval(()=>{document.querySelectorAll('[data-live]').forEach(el=>{const s=+el.dataset.live;if(s)el.textContent=fmtDur(Date.now()-s)})},200);
+
+/* export */
+function tableRows(){
+  const st=stats();
+  const out=[['방문일자',S.date],['방문시간',S.time],['매장',S.store],['주문방식','키오스크'],[],
+    ['번호','구분','주문시작','주문종료','소요시간(초)','다음 대기자 수','추정 대기(초)','전체 소요 추정(초)','메모']];const WI=waitInfo(S.rows);
+  S.rows.filter(r=>r.start!=null).forEach(r=>out.push([r.n,r.group?'단체':'단독',hmsd(r.start),r.end!=null?hmsd(r.end):'',done(r)?secs(r.end-r.start):'',r.wait??'',estWait(r,WI.avgOrder)!=null?secs(estWait(r,WI.avgOrder)):'',estTotal(r,WI.avgOrder)!=null?secs(estTotal(r,WI.avgOrder)):'',r.memo||'']));
+  out.push([],['구분','건수','평균(초)','중앙값(초)','최소(초)','최대(초)']);
+  [['전체',st.all],['단독',st.solo],['단체',st.grp]].forEach(([k,s])=>out.push(s.n?[k,s.n,secs(s.avg),secs(s.med),secs(s.min),secs(s.max)]:[k,0,'','','','']));
+  if(WI.n)out.push(['혼잡도','대기자 평균',WI.avgWait.toFixed(1),'최대',WI.maxWait,'추정 대기 평균(초)',WI.avgOrder!=null?secs(WI.avgWait*WI.avgOrder):'','전체 소요 추정 평균(초)',WI.avgTotal!=null?secs(WI.avgTotal):'']);
+  const hr=(h)=>[h.label,h.n,h.avgOrder!=null?secs(h.avgOrder):'',h.wn,h.avgWait!=null?h.avgWait.toFixed(1):'',h.estWait!=null?secs(h.estWait):'',h.estTotal!=null?secs(h.estTotal):''];
+  out.push([],['시간대','손님','평균 주문(초)','대기 입력','평균 대기자','추정 대기(초)','전체 소요 추정(초)']);hourly(S.rows).forEach(h=>out.push(hr(h)));
+  out.push(['※ 추정 대기 = 다음 대기자 수 × 이 매장 평균 주문시간 (줄 맨 끝 손님 기준 추정값), 전체 소요 추정 = 추정 대기 + 실측 주문시간']);
+  return out;
+}
+function toTSV(){return tableRows().map(r=>r.map(c=>String(c??'').replace(/[\t\n]/g,' ')).join('\t')).join('\n')}
+function toCSV(){return tableRows().map(r=>r.map(c=>{const v=String(c??'');return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v}).join(',')).join('\n')}
+function toSummary(){
+  const st=stats();const f=(k,s,u)=>s.n?`${k} ${s.n}${u}: 평균 ${secs(s.avg)}초 (최소 ${secs(s.min)} / 최대 ${secs(s.max)})`:`${k}: 기록 없음`;
+  return `[키오스크 주문시간 측정]\n${S.date} ${S.time} · ${S.store||'매장 미입력'}\n${f('전체',st.all,'명')}\n${f('단독',st.solo,'명')}\n${f('단체',st.grp,'팀')}`+(()=>{const W=waitInfo(S.rows);return W.n?`\n혼잡도: 대기자 평균 ${W.avgWait.toFixed(1)}명 (최대 ${W.maxWait}명)`+(W.avgOrder!=null?`, 추정 대기 평균 ${secs(W.avgWait*W.avgOrder)}초`:'')+(W.avgTotal!=null?`\n전체 소요(대기+주문) 추정 평균 ${secs(W.avgTotal)}초`:''):''})();
+}
+function copy(text,btn){
+  const fallback=()=>{const box=$('csvBox');box.hidden=false;box.value=text;box.focus();box.select();$('toggleCsv').textContent='CSV 닫기';toast('아래 칸이 선택됐어요. 길게 눌러 복사하세요')};
+  try{navigator.clipboard.writeText(text).then(()=>toast('복사했어요'),fallback)}catch(e){fallback()}
+}
+$('copyTsv').addEventListener('click',()=>copy(toTSV()));
+$('copySum').addEventListener('click',()=>copy(toSummary()));
+$('toggleCsv').addEventListener('click',()=>{const b=$('csvBox');b.hidden=!b.hidden;$('toggleCsv').textContent=b.hidden?'CSV 보기':'CSV 닫기';if(!b.hidden)b.value=toCSV()});
+
+/* add / undo / reset */
+$('addRow').addEventListener('click',()=>{snap();const last=S.rows[S.rows.length-1];S.rows.push(mkRow(last?last.n+1:1));commit()});
+$('undo').addEventListener('click',()=>{if(!undoStack.length){toast('되돌릴 기록이 없어요');return}S=JSON.parse(undoStack.pop());commit();toast('한 단계 되돌렸어요')});
+let resetArm=false,resetT;
+$('reset').addEventListener('click',e=>{
+  const b=e.currentTarget;
+  if(!resetArm){resetArm=true;b.classList.add('arm');b.textContent='한 번 더 누르면 모두 삭제';clearTimeout(resetT);
+    resetT=setTimeout(()=>{resetArm=false;b.classList.remove('arm');b.textContent='지금 매장 기록 지우기'},3500);return}
+  snap();resetArm=false;b.classList.remove('arm');b.textContent='지금 매장 기록 지우기';
+  const keep={store:S.store,archive:S.archive};S=fresh();S.store=keep.store;S.archive=keep.archive;
+  $('vDate').value=S.date;$('vTime').value=S.time;$('vStore').value=S.store;commit();toast('초기화했어요. 되돌리기로 복구할 수 있어요');
+});
+
+/* editor */
+let edN=null,delArm=false;
+function openEd(n){
+  const r=S.rows.find(x=>x.n===n);if(!r)return;edN=n;delArm=false;
+  $('edTitle').textContent=`${n}번 손님 수정`;
+  $('edStart').value=r.start!=null?hmsd(r.start):'';$('edEnd').value=r.end!=null?hmsd(r.end):'';
+  $('edMemo').value=r.memo||'';$('edGroup').textContent=r.group?'단독으로 바꾸기':'단체로 표시';
+  $('edDelete').textContent='손님 삭제';$('edDelete').classList.remove('arm');$('edErr').textContent='';
+  $('sheet').hidden=false;$('scrim').hidden=false;
+}
+function closeEd(){$('sheet').hidden=true;$('scrim').hidden=true;edN=null}
+$('edClose').addEventListener('click',closeEd);$('scrim').addEventListener('click',closeEd);
+function parseT(str,baseMs){
+  str=str.trim();if(!str)return null;
+  const m=str.match(/^(\d{1,2}):(\d{1,2})(?::(\d{1,2})(?:\.(\d))?)?$/);if(!m)return NaN;
+  const d=new Date(baseMs);d.setHours(+m[1],+m[2],+(m[3]||0),(+(m[4]||0))*100);return d.getTime();
+}
+$('edSave').addEventListener('click',()=>{
+  const r=S.rows.find(x=>x.n===edN);if(!r)return;
+  let base=r.start||r.end;if(!base){const p=(S.date||ymd(new Date())).split('-');base=new Date(+p[0],+p[1]-1,+p[2]).getTime()}
+  const s=parseT($('edStart').value,base),e=parseT($('edEnd').value,base);
+  if(Number.isNaN(s)||Number.isNaN(e)){$('edErr').textContent='시간은 12:06:03 처럼 시:분:초로 적어 주세요.';return}
+  if(s==null&&e!=null){$('edErr').textContent='종료만 있을 수는 없어요. 시작 시간도 적어 주세요.';return}
+  if(s!=null&&e!=null&&e<=s){$('edErr').textContent='종료가 시작보다 늦어야 해요.';return}
+  snap();r.start=s;r.end=e;r.memo=$('edMemo').value.trim();commit();closeEd();toast(`${r.n}번 저장했어요`);
+});
+$('edGroup').addEventListener('click',()=>{const r=S.rows.find(x=>x.n===edN);if(!r)return;snap();r.group=!r.group;commit();$('edGroup').textContent=r.group?'단독으로 바꾸기':'단체로 표시'});
+$('edClear').addEventListener('click',()=>{const r=S.rows.find(x=>x.n===edN);if(!r)return;snap();r.start=null;r.end=null;commit();closeEd();toast(`${r.n}번 시간을 지웠어요`)});
+$('edDelete').addEventListener('click',e=>{
+  if(!delArm){delArm=true;e.currentTarget.classList.add('arm');e.currentTarget.textContent='한 번 더 누르면 삭제';return}
+  deleteCustomer(edN);closeEd();
+});
+
+/* multi-store */
+function sessStats(rows){return {all:stat(rows),solo:stat(rows.filter(r=>!r.group)),grp:stat(rows.filter(r=>r.group))}}
+function curSession(){return {date:S.date,time:S.time,store:S.store,rows:S.rows.filter(r=>r.start!=null),idx:-1}}
+function allSessions(){const c=curSession();return S.archive.map((s,i)=>Object.assign({},s,{idx:i})).concat(c.rows.length?[c]:[])}
+let delIdx=null;
+function renderStores(){
+  const all=allSessions();const f=s=>s.n?secs(s.avg)+'초':'-';
+  const line=(name,when,rows,extra,del)=>{const st=sessStats(rows);return `<tr${extra?' class="tot"':''}><td>${del}</td><td>${name}</td><td class="t">${when}</td><td class="t">${st.all.n}</td><td class="t"><b>${f(st.all)}</b></td><td class="t">${f(st.solo)}</td><td class="t">${f(st.grp)}</td><td class="t">${st.all.n?secs(st.all.min)+'~'+secs(st.all.max):'-'}</td><td class="t">${(W=>W.n?W.avgWait.toFixed(1)+'명':'-')(waitInfo(rows))}</td><td class="t">${(W=>W.avgTotal!=null?'≈'+secs(W.avgTotal)+'초':'-')(waitInfo(rows))}</td></tr>`};
+  let html=all.map(s=>line(esc(s.store||'(매장명 없음)')+(s.idx<0?' <span class="tag solo">측정 중</span>':''),esc((s.date||'').slice(5))+' '+esc(s.time||''),s.rows,false,
+    (k=>`<button class="btn sm ${delIdx===k?'arm danger':''}" data-del="${k}">${delIdx===k?'정말 삭제':'✕'}</button>`)(s.idx>=0?String(s.idx):'cur'))).join('');
+  if(all.length>1)html+=line(`<b>합계 ${all.length}곳</b>`,'',all.flatMap(s=>s.rows),true,'');
+  $('storeBody').innerHTML=html||`<tr><td colspan="10" style="white-space:normal;color:var(--muted)">측정한 매장이 여기에 쌓여요. 한 매장을 마치면 위의 '이 매장 저장하고 다음 매장 측정'을 누르세요.</td></tr>`;
+}
+$('storeBody').addEventListener('click',e=>{const b=e.target.closest('[data-del]');if(!b)return;const k=b.dataset.del;
+  if(delIdx!==k){delIdx=k;renderStores();setTimeout(()=>{if(delIdx===k){delIdx=null;renderStores()}},3500);return}
+  snap();delIdx=null;let name;
+  if(k==='cur'){name=S.store||'매장';const keep=S.archive;S=fresh();S.archive=keep;$('vDate').value=S.date;$('vTime').value=S.time;$('vStore').value=''}
+  else{name=S.archive[+k].store||'매장';S.archive.splice(+k,1)}
+  commit();toast(`'${name}' 기록을 삭제했어요. 되돌리기로 복구할 수 있어요`)});
+let nextArm=false,nextT;
+$('nextStore').addEventListener('click',e=>{
+  const b=e.currentTarget;const cur=curSession();
+  if(!cur.rows.length){toast('아직 측정한 손님이 없어요');return}
+  if(!nextArm){nextArm=true;b.classList.add('arm');
+    const run=cur.rows.filter(r=>r.end==null).length;
+    b.textContent=`한 번 더 누르면 '${S.store||'매장명 없음'}' ${cur.rows.length}명 저장`+(run?` (진행 중 ${run}명 포함)`:'');
+    clearTimeout(nextT);nextT=setTimeout(()=>{nextArm=false;b.classList.remove('arm');b.textContent='이 매장 저장하고 다음 매장 측정'},4000);return}
+  nextArm=false;b.classList.remove('arm');b.textContent='이 매장 저장하고 다음 매장 측정';
+  snap();S.archive.push({date:S.date,time:S.time,store:S.store,rows:cur.rows});
+  const arch=S.archive,saved=S.store||'매장';S=fresh();S.archive=arch;
+  $('vDate').value=S.date;$('vTime').value=S.time;$('vStore').value='';commit();
+  toast(`'${saved}' 저장 완료. 다음 매장명을 입력하세요`);try{window.scrollTo({top:0,behavior:'smooth'})}catch(err){window.scrollTo(0,0)}
+});
+$('copyAll').addEventListener('click',()=>{
+  const ss=allSessions();if(!ss.length){toast('복사할 기록이 없어요');return}
+  const out=[['방문일자','방문시간','매장','주문방식','번호','구분','주문시작','주문종료','소요시간(초)','다음 대기자 수','추정 대기(초)','전체 소요 추정(초)','메모']];
+  ss.forEach(s=>{const WI=waitInfo(s.rows);s.rows.forEach(r=>out.push([s.date,s.time,s.store,'키오스크',r.n,r.group?'단체':'단독',hmsd(r.start),r.end!=null?hmsd(r.end):'',done(r)?secs(r.end-r.start):'',r.wait??'',estWait(r,WI.avgOrder)!=null?secs(estWait(r,WI.avgOrder)):'',estTotal(r,WI.avgOrder)!=null?secs(estTotal(r,WI.avgOrder)):'',r.memo||'']))});
+  const sumRow=(name,when,rows)=>{const st=sessStats(rows),a=st.all;return [name,when,a.n||0,a.n?secs(a.avg):'',a.n?secs(a.med):'',a.n?secs(a.min):'',a.n?secs(a.max):'',st.solo.n?secs(st.solo.avg):'',st.grp.n?secs(st.grp.avg):'',(W=>W.n?W.avgWait.toFixed(1):'')(waitInfo(rows)),(W=>W.avgTotal!=null?secs(W.avgTotal):'')(waitInfo(rows))]};
+  out.push([],['매장','방문','건수','평균(초)','중앙값(초)','최소(초)','최대(초)','단독 평균(초)','단체 평균(초)','평균 대기자 수','전체 소요 추정 평균(초)']);
+  ss.forEach(s=>out.push(sumRow(s.store,s.date+' '+s.time,s.rows)));
+  if(ss.length>1)out.push(sumRow('합계','',ss.flatMap(s=>s.rows)));
+  out.push([],['매장','시간대','손님','평균 주문(초)','대기 입력','평균 대기자','추정 대기(초)','전체 소요 추정(초)']);
+  ss.forEach(s=>hourly(s.rows).forEach(h=>out.push([s.store,h.label,h.n,h.avgOrder!=null?secs(h.avgOrder):'',h.wn,h.avgWait!=null?h.avgWait.toFixed(1):'',h.estWait!=null?secs(h.estWait):'',h.estTotal!=null?secs(h.estTotal):''])));
+  copy(out.map(r=>r.map(c=>String(c??'').replace(/[\t\n]/g,' ')).join('\t')).join('\n'));
+});
+
+function deleteCustomer(n){snap();S.rows=S.rows.filter(x=>x.n!==n);S.rows.forEach((r,i)=>r.n=i+1);if(!S.rows.length)S.rows.push(mkRow(1));
+  rowDel=null;commit();toast(`${n}번 손님을 삭제하고 번호를 다시 매겼어요. 되돌리기로 복구할 수 있어요`)}
+$('tbody').addEventListener('click',e=>{const b=e.target.closest('[data-rdel]');if(!b)return;const n=+b.dataset.rdel;
+  if(rowDel!==n){rowDel=n;renderTable();setTimeout(()=>{if(rowDel===n){rowDel=null;renderTable()}},3500);return}
+  deleteCustomer(n)});
+
+render();
+if(S.rows.some(r=>r.start&&!r.end))keepAwake();
+})();
+</script>
+
+<script>
+(function(){
+const MKEY='littlestar-mock-v1',TKEY='littlestar-tab',APPROVE=3000,QRSCAN=1000,AUTOPAY=800;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sec=ms=>(ms/1000).toFixed(1);
+const won=n=>n.toLocaleString('ko-KR')+'원';
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const MENU={'커피':[['아메리카노',3500],['카페라떼',4000],['바닐라라떼',4500],['카푸치노',4000],['카라멜마키아토',4800],['콜드브루',4300],['돌체라떼',4800],['에스프레소',3000]],
+ '논커피':[['녹차라떼',4500],['초코라떼',4500],['고구마라떼',4800],['레몬에이드',4500],['자몽에이드',4500],['딸기라떼',4800]],
+ '디카페인':[['디카페인 아메리카노',4000],['디카페인 카페라떼',4500],['디카페인 바닐라라떼',5000],['디카페인 콜드브루',4800]],
+ '디저트':[['치즈케이크',5500],['크루아상',3800],['쿠키',2500],['마들렌',2800]]};
+const MODE_NAME={full:'① 기존 전체 단계',fav1:'② 단골 1개',fav3:'③ 단골 3개'};
+const isDrink=s=>s.cat!=='디저트';
+function price(s){const b=MENU[s.cat].find(m=>m[0]===s.name)[1];return b+(isDrink(s)&&s.size==='L'?500:0)+(s.shot?500:0)}
+function label(s){if(!isDrink(s))return s.name;return `${s.temp==='ICE'?'아이스':'따뜻한'} ${s.name} · ${s.size==='L'?'라지':'레귤러'}${s.shot?' · 샷 추가':''}`}
+function same(a,b){return !!(a&&b)&&a.name===b.name&&a.temp===b.temp&&a.size===b.size&&(a.shot||0)===(b.shot||0)}
+function randSpec(excl){const cat=pick(['커피','커피','논커피','디카페인']);const names=MENU[cat].map(m=>m[0]).filter(n=>n!=='에스프레소'&&!(excl||[]).includes(n));
+  return {cat,name:pick(names),temp:pick(['HOT','ICE','ICE']),size:pick(['R','L']),shot:(cat==='커피'||cat==='디카페인')&&Math.random()<.3?1:0}}
+function randPhone(){let s='';for(let i=0;i<8;i++)s+=Math.floor(Math.random()*10);return s}
+const fmtPhone=s=>{const p=(s+'________').slice(0,8);return `010-${p.slice(0,4)}-${p.slice(4)}`};
+
+/* tabs */
+function showTab(t){document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));
+  $('tabField').hidden=t!=='field';$('tabMock').hidden=t!=='mock';try{localStorage.setItem(TKEY,t)}catch(e){}}
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
+let startTab='field';try{startTab=localStorage.getItem(TKEY)||'field'}catch(e){}
+showTab(startTab==='mock'?'mock':'field');
+
+/* settings + trials */
+let M=null;try{M=JSON.parse(localStorage.getItem(MKEY)||'null')}catch(e){}
+if(!M||!Array.isArray(M.trials))M={mode:'full',ident:'qr',pay:'card',accrue:true,trials:[]};
+function msave(){try{localStorage.setItem(MKEY,JSON.stringify(M))}catch(e){}}
+function renderSetup(){
+  [['segMode','mode'],['segIdent','ident'],['segPay','pay']].forEach(([id,k])=>$(id).querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===M[k])));
+  $('mAccrue').checked=!!M.accrue;$('optFull').hidden=M.mode!=='full';$('optLs').hidden=M.mode==='full';
+}
+[['segMode','mode'],['segIdent','ident'],['segPay','pay']].forEach(([id,k])=>$(id).addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;M[k]=b.dataset.v;msave();renderSetup();newTrial()}));
+$('mAccrue').addEventListener('change',e=>{M.accrue=e.target.checked;msave();newTrial()});
+
+/* trial */
+let T=null;
+function newTrial(){
+  const mission=randSpec();let favs=[mission];
+  if(M.mode==='fav3'){const a=randSpec([mission.name]);const b=randSpec([mission.name,a.name]);favs=[mission,a,b].sort(()=>Math.random()-.5)}
+  const full=M.mode==='full';
+  T={mode:M.mode,full,ident:full?null:M.ident,pay:full?'card':M.pay,accrue:full&&M.accrue,mission,favs,phone:randPhone(),
+     t0:null,tConfirm:null,tEnd:null,taps:0,busy:false,screen:full?'where':'ident',cat:'커피',cart:[],sel:null,typed:'',keyFor:null,msg:'',chosen:null,accrued:false,payWay:'card'};
+  renderMission();renderKiosk();$('mElapsed').textContent='0.0초';
+}
+function identLabel(){return T.full?(T.accrue?'적립번호':'적립 안 함'):(T.ident==='qr'?'QR':'번호')}
+function renderMission(){
+  const needPhone=T.accrue||(!T.full&&T.ident==='phone');
+  $('mission').innerHTML=`<div class="m-k">${MODE_NAME[T.mode]} · 이번에 주문할 메뉴</div>
+    <div class="m-v">${esc(label(T.mission))}</div>
+    <div class="m-sub">${T.full?'매장에서 먹기 · ':''}${needPhone?`${T.full?'적립 번호 입력':'번호로 식별'}(아무 번호 8자리) · `:''}${T.full&&!T.accrue?'적립 안 함 · ':''}${!T.full&&T.ident==='qr'?'QR로 식별 · ':''}결제 <b>${T.pay==='auto'?'자동충전 잔액':'카드'}</b></div>
+    <div class="m-hint">아래 키오스크 화면을 처음 누르는 순간 시간이 시작돼요.</div>`;
+}
+const now=()=>performance.now();
+function go(s){T.screen=s;T.msg='';renderKiosk()}
+function confirmNow(){if(T.tConfirm==null)T.tConfirm=now()}
+function wait(ms,next){T.busy=true;setTimeout(()=>{if(!T||T._dead)return;T.busy=false;next()},ms)}
+function finish(){
+  T.tEnd=now();
+  const correct=T.full?(T.cart.length===1&&same(T.cart[0],T.mission)&&(!T.accrue||T.accrued)):same(T.chosen,T.mission);
+  T.correct=correct;
+  M.trials.push({no:(M.trials.length?M.trials[M.trials.length-1].no:0)+1,mode:T.mode,ident:identLabel(),pay:T.pay==='auto'?'자동충전':'카드',
+    confirm:Math.round(T.tConfirm-T.t0),total:Math.round(T.tEnd-T.t0),taps:T.taps,correct});
+  msave();go('done');renderResults();
+}
+function act(a,v){
+  switch(a){
+    case 'where':go('menu');break;
+    case 'cat':T.cat=v;renderKiosk();break;
+    case 'item':T.sel={cat:T.cat,name:v,temp:'HOT',size:'R',shot:0};go('opt');break;
+    case 'temp':T.sel.temp=v;renderKiosk();break;
+    case 'size':T.sel.size=v;renderKiosk();break;
+    case 'shot':T.sel.shot=+v;renderKiosk();break;
+    case 'optCancel':T.sel=null;go('menu');break;
+    case 'add':T.cart.push(T.sel);T.sel=null;go('cart');break;
+    case 'more':go('menu');break;
+    case 'cart':go('cart');break;
+    case 'del':T.cart.splice(+v,1);renderKiosk();break;
+    case 'order':if(!T.cart.length){T.msg='메뉴를 먼저 담아 주세요';renderKiosk();break}go(T.accrue?'accrue':'paymethod');break;
+    case 'accrueYes':T.keyFor='accrue';T.typed='';go('keypad');break;
+    case 'accrueNo':go('paymethod');break;
+    case 'key':if(T.typed.length<8)T.typed+=v;T.msg='';renderKiosk();break;
+    case 'back':T.typed=T.typed.slice(0,-1);renderKiosk();break;
+    case 'keyOk':
+      if(T.typed.length<8){T.msg='8자리를 모두 눌러 주세요';renderKiosk();break}
+      if(T.keyFor==='accrue'){T.accrued=true;go('paymethod')}else go('fav');break;
+    case 'payCard':case 'paySimple':confirmNow();T.payWay=a==='payCard'?'card':'simple';go('card');break;
+    case 'insert':go('approving');wait(APPROVE,finish);break;
+    case 'qr':go('scanning');wait(QRSCAN,()=>go('fav'));break;
+    case 'phoneIn':T.keyFor='ident';T.typed='';go('keypad');break;
+    case 'fav':T.chosen=T.favs[+v];confirmNow();
+      if(T.pay==='auto'){go('autopay');wait(AUTOPAY,finish)}else{T.payWay='card';go('card')}break;
+  }
+}
+$('kiosk').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-a]');if(!b||!T||T.tEnd!=null||T.busy)return;
+  if(T.t0==null)T.t0=now();
+  T.taps++;act(b.dataset.a,b.dataset.v);
+});
+setInterval(()=>{if(!T||T.t0==null)return;$('mElapsed').textContent=sec((T.tEnd!=null?T.tEnd:now())-T.t0)+'초'},100);
+$('mNext').addEventListener('click',()=>{if(T)T._dead=true;newTrial()});
+
+function head(ls,right){return `<div class="k-head ${ls?'ls':''}">${ls?'리틀스타 단골 주문':'카페 키오스크'}<span>${right||'모의 화면'}</span></div>`}
+function btn(a,v,txt,cls){return `<button data-a="${a}" ${v!=null?`data-v="${esc(v)}"`:''} class="${cls||''}">${txt}</button>`}
+function renderKiosk(){
+  const k=$('kiosk');const S=T.screen;let h='';
+  const cartTotal=T.cart.reduce((a,s)=>a+price(s),0);
+  if(S==='where'){h=head(false)+`<div class="k-body"><div class="k-title">어디서 드시나요?</div><div class="k-sub">화면을 누르면 주문이 시작됩니다</div>
+    <div class="k-grid2">${btn('where','in','매장에서 먹기','k-big')}${btn('where','out','포장하기','k-big')}</div></div>`}
+  else if(S==='menu'){h=head(false,'메뉴')+`<div class="k-body"><div class="k-tabs">${Object.keys(MENU).map(c=>btn('cat',c,c,T.cat===c?'on':'')).join('')}</div>
+    <div class="k-items">${MENU[T.cat].map(([n,p])=>btn('item',n,`${n}<small>${won(p)}</small>`)).join('')}</div>
+    ${T.cart.length?`<div class="k-foot">${btn('cart',null,`장바구니 ${T.cart.length}`)}${btn('cart',null,`주문하기 ${won(cartTotal)}`,'k-main')}</div>`:''}</div>`}
+  else if(S==='opt'){const s=T.sel;const d=isDrink(s);
+    h=head(false,'옵션')+`<div class="k-body"><div class="k-title">${esc(s.name)}</div>
+    ${d?`<div class="k-opt"><span>온도</span>${btn('temp','HOT','HOT',s.temp==='HOT'?'on':'')}${btn('temp','ICE','ICE',s.temp==='ICE'?'on':'')}
+    <span>사이즈</span>${btn('size','R','레귤러',s.size==='R'?'on':'')}${btn('size','L','라지 +500',s.size==='L'?'on':'')}
+    ${(s.cat==='커피'||s.cat==='디카페인')?`<span>샷</span>${btn('shot','0','기본',!s.shot?'on':'')}${btn('shot','1','샷 추가 +500',s.shot?'on':'')}`:''}</div>`:'<div class="k-sub">옵션 없음</div>'}
+    <div class="k-foot">${btn('optCancel',null,'취소')}${btn('add',null,`담기 ${won(price(s))}`,'k-main')}</div></div>`}
+  else if(S==='cart'){h=head(false,'장바구니')+`<div class="k-body"><div class="k-title">주문 내역</div>
+    <div class="k-cart">${T.cart.map((s,i)=>`<div><span>${esc(label(s))}<br><small>${won(price(s))}</small></span>${btn('del',i,'삭제')}</div>`).join('')||'<span class="k-sub">비어 있어요</span>'}</div>
+    <div class="k-total"><span>합계</span><span>${won(cartTotal)}</span></div><div class="k-msg">${esc(T.msg)}</div>
+    <div class="k-foot">${btn('more',null,'더 담기')}${btn('order',null,'주문하기','k-main')}</div></div>`}
+  else if(S==='accrue'){h=head(false,'적립')+`<div class="k-body"><div class="k-title">포인트를 적립하시겠어요?</div>
+    <div class="k-grid2">${btn('accrueYes',null,'번호 입력해서 적립','k-big')}${btn('accrueNo',null,'적립 안 함','k-big')}</div></div>`}
+  else if(S==='keypad'){const ls=T.keyFor==='ident';h=head(ls,ls?'번호 식별':'적립')+`<div class="k-body">
+    <div class="k-title">${ls?'휴대폰 번호로 단골 찾기':'적립할 휴대폰 번호'}</div>
+    <div class="k-phone">${fmtPhone(T.typed)}</div><div class="k-msg">${esc(T.msg)}</div>
+    <div class="k-keys">${[1,2,3,4,5,6,7,8,9].map(n=>btn('key',n,n)).join('')}${btn('back',null,'←')}${btn('key',0,'0')}${btn('keyOk',null,'확인',ls?'k-main k-ls':'k-main')}</div></div>`}
+  else if(S==='paymethod'){h=head(false,'결제')+`<div class="k-body"><div class="k-title">결제 수단을 골라 주세요</div><div class="k-sub">결제 금액 ${won(cartTotal)}</div>
+    <div class="k-grid2">${btn('payCard',null,'신용·체크카드','k-big')}${btn('paySimple',null,'간편결제<br>(휴대폰)','k-big')}</div></div>`}
+  else if(S==='card'){const ls=!T.full;h=head(ls,'결제')+`<div class="k-body"><div class="k-center">
+    <div class="k-title">${T.payWay==='simple'?'휴대폰을 리더기에 대 주세요':'카드를 투입구에 꽂아 주세요'}</div>
+    <div class="k-sub">${ls?'등록된 카드로 결제합니다':'결제 금액 '+won(cartTotal)}</div>
+    ${btn('insert',null,T.payWay==='simple'?'휴대폰 대기 (모의)':'카드 꽂기 (모의)',ls?'k-main k-ls':'k-main')}</div></div>`}
+  else if(S==='approving'){h=head(!T.full,'결제')+`<div class="k-body"><div class="k-center"><div class="k-title">승인 중입니다…</div><div class="k-sub">모의 승인 3초</div></div></div>`}
+  else if(S==='ident'){h=head(true)+`<div class="k-body"><div class="k-title">어서 오세요</div><div class="k-sub">단골 QR을 대거나 휴대폰 번호를 눌러 주세요</div>
+    ${btn('qr',null,'QR 대기 (모의)<br><small style="font-weight:400">휴대폰 QR을 스캐너에 대기</small>','k-big k-ls')}${btn('phoneIn',null,'휴대폰 번호 입력')}</div>`}
+  else if(S==='scanning'){h=head(true)+`<div class="k-body"><div class="k-center"><div class="k-title">QR 확인 중…</div><div class="k-sub">모의 인식 1초</div></div></div>`}
+  else if(S==='fav'){h=head(true,'단골 메뉴')+`<div class="k-body"><div class="k-title">반가워요, 단골님</div>
+    <div class="k-sub">${T.pay==='auto'?'충전 잔액 32,500원에서 바로 결제돼요':'누르면 등록된 카드로 결제합니다'}</div>
+    <div class="k-fav ${T.favs.length===1?'one':''}">${T.favs.map((s,i)=>btn('fav',i,`<b>${esc(label(s))}</b><span>${won(price(s))}</span><small>이대로 주문</small>`)).join('')}</div></div>`}
+  else if(S==='autopay'){h=head(true,'결제')+`<div class="k-body"><div class="k-center"><div class="k-title">잔액에서 결제 중…</div><div class="k-sub">모의 0.8초</div></div></div>`}
+  else if(S==='done'){const ordered=T.full?T.cart.map(label).join(', ')||'-':(T.chosen?label(T.chosen):'-');
+    h=head(!T.full,'완료')+`<div class="k-body"><div class="k-center"><div class="k-title">주문이 완료됐어요</div>
+    <div class="k-res"><span>주문확정</span><b>${sec(T.tConfirm-T.t0)}초</b><span>결제 포함</span><b>${sec(T.tEnd-T.t0)}초</b><span>터치</span><b>${T.taps}회</b>
+    <span>주문 내용</span><b class="${T.correct?'':'bad'}">${T.correct?'정확':'다름'}</b></div>
+    ${T.correct?'':`<div class="k-sub">주문: ${esc(ordered)}<br>목표: ${esc(label(T.mission))}${T.accrue&&!T.accrued?'<br>적립 번호 미입력':''}</div>`}
+    <div class="k-sub">아래 '새로 시작'으로 다음 회차를 진행하세요</div></div></div>`}
+  if(S!=='done')h=h.replace('<div class="k-body">',`<div class="k-body"><div class="k-goal">목표: ${esc(label(T.mission))}</div>`);
+  k.innerHTML=h;
+}
+
+/* results */
+function agg(list){if(!list.length)return null;const a=k=>list.reduce((s,t)=>s+t[k],0)/list.length;return {n:list.length,confirm:a('confirm'),total:a('total'),taps:a('taps')}}
+function renderResults(){
+  const ok=M.trials.filter(t=>t.correct);const A={};
+  ['full','fav1','fav3'].forEach(m=>A[m]=agg(ok.filter(t=>t.mode===m)));
+  const SHORT={full:'① 기존',fav1:'② 단골 1개',fav3:'③ 단골 3개'};
+  $('cmp').innerHTML=['full','fav1','fav3'].map(m=>{const a=A[m];return `<div class="cmp"><div class="h">${SHORT[m]}</div>
+    <div class="v">${a?sec(a.confirm)+'초':'-'}</div><div class="s">${a?`결제 포함 ${sec(a.total)}초<br>${a.n}회 · 터치 ${a.taps.toFixed(1)}회`:'아직 기록 없음'}</div></div>`}).join('');
+  const r=[];if(A.full&&A.fav1)r.push(`단골 1개는 기존보다 주문확정 기준 <b>${(A.full.confirm/A.fav1.confirm).toFixed(1)}배</b> 빠름`);
+  if(A.full&&A.fav3)r.push(`단골 3개는 <b>${(A.full.confirm/A.fav3.confirm).toFixed(1)}배</b> 빠름`);
+  $('ratio').innerHTML=r.join(', ');
+  $('mBody').innerHTML=M.trials.length?M.trials.slice().reverse().map(t=>`<tr><td class="t">${t.no}</td><td>${MODE_NAME[t.mode]}</td><td>${t.mode==='full'?t.ident:t.ident+'·'+t.pay}</td>
+    <td class="t">${sec(t.confirm)}초</td><td class="t">${sec(t.total)}초</td><td class="t">${t.taps}</td><td class="${t.correct?'ok':'ng'}">${t.correct?'정확':'다름'}</td></tr>`).join('')
+    :`<tr><td colspan="7" style="white-space:normal;color:var(--muted)">위 키오스크로 한 번 주문해 보면 여기에 기록돼요. 방식마다 3회 이상 해 보시길 권해요.</td></tr>`;
+}
+function toast(m){const t=$('toast');t.textContent=m;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,1800)}
+$('mCopy').addEventListener('click',()=>{
+  const rows=[['회차','방식','식별·결제','주문확정(초)','결제포함(초)','터치','정확']].concat(M.trials.map(t=>[t.no,MODE_NAME[t.mode],t.mode==='full'?t.ident:t.ident+'·'+t.pay,sec(t.confirm),sec(t.total),t.taps,t.correct?'정확':'다름']));
+  const text=rows.map(r=>r.join('\t')).join('\n');
+  const fb=()=>{const b=$('csvBox');showTab('field');b.hidden=false;b.value=text;b.select();toast('결과표 아래 칸을 길게 눌러 복사하세요')};
+  try{navigator.clipboard.writeText(text).then(()=>toast('복사했어요'),fb)}catch(e){fb()}
+});
+$('mUndo').addEventListener('click',()=>{if(!M.trials.length){toast('지울 기록이 없어요');return}M.trials.pop();msave();renderResults();toast('마지막 기록을 지웠어요')});
+let rArm=false;$('mReset').addEventListener('click',e=>{const b=e.currentTarget;
+  if(!rArm){rArm=true;b.classList.add('arm');b.textContent='한 번 더 누르면 모두 삭제';setTimeout(()=>{rArm=false;b.classList.remove('arm');b.textContent='모의 기록 초기화'},3500);return}
+  rArm=false;b.classList.remove('arm');b.textContent='모의 기록 초기화';M.trials=[];msave();renderResults();toast('모의 기록을 지웠어요')});
+
+renderSetup();newTrial();renderResults();
+})();
+</script>
+
+</html>
