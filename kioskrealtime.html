@@ -386,9 +386,15 @@ async function keepAwake(){
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&S.rows.some(r=>r.start&&!r.end))keepAwake()});
 
 /* visit info */
+/* 방문 일자·시간 기본값: 아직 측정 전이고 직접 고치지 않았다면 항상 지금 시각 */
+function untouched(){return !S.edited&&!S.rows.some(r=>r.start!=null)}
+function stampNow(){if(!untouched())return false;const d=new Date(),dd=ymd(d),tt=hm(d);
+  if(S.date===dd&&S.time===tt)return false;S.date=dd;S.time=tt;$('vDate').value=dd;$('vTime').value=tt;return true}
+stampNow();
 $('vDate').value=S.date;$('vTime').value=S.time;$('vStore').value=S.store;
 ['vDate','vTime','vStore'].forEach(id=>$(id).addEventListener('input',e=>{
-  const k={vDate:'date',vTime:'time',vStore:'store'}[id];S[k]=e.target.value;save();renderTable();renderStores()}));
+  const k={vDate:'date',vTime:'time',vStore:'store'}[id];S[k]=e.target.value;if(id!=='vStore')S.edited=true;save();renderTable();renderStores()}));
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&stampNow()){save();renderTable();renderStores()}});
 
 /* stats */
 function done(r){return r.start!=null&&r.end!=null&&r.end>r.start}
@@ -423,6 +429,7 @@ function press(n,kind){
   const now=Date.now();
   if(kind==='start'){
     if(r.start!=null&&!isArmed(n,'start')){arm(n,'start');return}
+    if(untouched()){const d=new Date(now);S.date=ymd(d);S.time=hm(d);$('vDate').value=S.date;$('vTime').value=S.time}
     snap();r.start=now;r.end=null;armed=null;
     if(S.rows[S.rows.length-1]===r)S.rows.push(mkRow(r.n+1));
     keepAwake();
