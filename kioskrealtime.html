@@ -222,7 +222,7 @@ textarea{font-family:var(--mono);font-size:12px;height:160px}
   <div id="tabField" class="col">
   <section class="card visit" aria-label="방문 정보">
     <label>방문 일자<input id="vDate" type="date"></label>
-    <label>방문 시간<input id="vTime" type="time"></label>
+    <label>방문 시간<input id="vTime" type="text" inputmode="numeric" maxlength="5" placeholder="12:05" autocomplete="off" aria-label="방문 시간 (시:분 숫자)"></label>
     <label class="full">매장명<input id="vStore" type="text" placeholder="예: ○○카페 강남역점" autocomplete="off"></label>
   </section>
 
@@ -392,8 +392,19 @@ function stampNow(){if(!untouched())return false;const d=new Date(),dd=ymd(d),tt
   if(S.date===dd&&S.time===tt)return false;S.date=dd;S.time=tt;$('vDate').value=dd;$('vTime').value=tt;return true}
 stampNow();
 $('vDate').value=S.date;$('vTime').value=S.time;$('vStore').value=S.store;
-['vDate','vTime','vStore'].forEach(id=>$(id).addEventListener('input',e=>{
-  const k={vDate:'date',vTime:'time',vStore:'store'}[id];S[k]=e.target.value;if(id!=='vStore')S.edited=true;save();renderTable();renderStores()}));
+['vDate','vStore'].forEach(id=>$(id).addEventListener('input',e=>{
+  const k={vDate:'date',vStore:'store'}[id];S[k]=e.target.value;if(id!=='vStore')S.edited=true;save();renderTable();renderStores()}));
+/* 방문 시간: 숫자만 입력(1205 → 12:05), 시계 선택 화면 없음 */
+const validT=v=>/^([01]?\d|2[0-3]):[0-5]\d$/.test(v);
+const normT=v=>{const m=v.match(/^(\d{1,2}):(\d{2})$/);return m?m[1].padStart(2,'0')+':'+m[2]:v};
+$('vTime').addEventListener('input',e=>{
+  const d=e.target.value.replace(/\D/g,'').slice(0,4);
+  e.target.value=d.length>2?d.slice(0,d.length-2)+':'+d.slice(-2):d;
+  });
+$('vTime').addEventListener('blur',e=>{if(!validT(e.target.value)){e.target.value=S.time;toast('시간은 1405 처럼 숫자 4자리로 적어 주세요')}
+  else{const t=normT(e.target.value);e.target.value=t;if(t!==S.time||!S.edited){S.time=t;S.edited=true;save();renderTable();renderStores()}}});
+$('vTime').addEventListener('keydown',e=>{if(e.key==='Enter')e.target.blur()});
+$('vTime').addEventListener('focus',e=>{try{e.target.select()}catch(err){}});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&stampNow()){save();renderTable();renderStores()}});
 
 /* stats */
